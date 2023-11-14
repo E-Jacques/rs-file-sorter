@@ -1,48 +1,41 @@
 mod common;
 
 #[cfg(test)]
-pub mod test_e2e_sorter_year_month {
-    use crate::common::clean_dir;
-
-    use super::common::file_or_dir_exists;
-    use rs_file_sorter::sortering_strategies::year_month_sotring_strategy::get_year_month_sorting_strategy;
+pub mod tests_e2e_exec_sort_command {
     use std::{fs, path::Path};
+
+    use rs_file_sorter::{
+        cli_handler::parser::{ArgValue, ParsedArgs},
+        commands::sort_command::exec_sort_command,
+    };
+
+    use crate::common::{
+        clean_dir, file_creator::FileCreator, file_or_dir_exists, generate_test_files,
+    };
 
     #[test]
     fn test_sort_to_same_file() {
         let files = vec![
-            "file_2022-02-22_F1BDD782",
-            "file_2022-10-20_6FC02130",
-            "file_2023-10-20_9E387272",
+            FileCreator::from("file_2022-02-22_F1BDD782"),
+            FileCreator::from("file_2022-10-20_6FC02130"),
+            FileCreator::from("file_2023-10-20_9E387272"),
         ];
-        let test_dir = Path::new("tests").join("rsc").join("sort").join("test_1");
-        let original_dir = test_dir.clone().join("original_dir");
-        let target_dir = test_dir.clone().join("target_dir");
-
+        let target_dir = Path::new("tests")
+            .join("rsc")
+            .join("sort")
+            .join("test_1")
+            .join("target_dir");
         clean_dir(target_dir.clone())
             .expect("Should be able to clean directory before running test.");
-        
-        for filename in files {
-            let from = original_dir.clone().join(filename);
-            let to = target_dir.clone().join(filename);
-            fs::copy(from.clone(), to.clone()).expect(
-                format!(
-                    "Trying to copy {} to {}. Cannot run test if cannot copy files.",
-                    from.to_str().unwrap(),
-                    to.to_str().unwrap()
-                )
-                .as_str(),
-            );
-        }
+        generate_test_files(&target_dir, files).expect("Unable to generate the test files!");
 
-        let year_month_sorting_strategy = get_year_month_sorting_strategy();
-        rs_file_sorter::sorter::sorter(
-            target_dir.clone().to_str().unwrap(),
-            target_dir.clone().to_str().unwrap(),
-            year_month_sorting_strategy,
-            |from, to| {
-                assert!(false, "Cannot move {from} to {to}.");
-            },
+        let final_target_dir = target_dir.clone().to_str().unwrap().to_string();
+        exec_sort_command(
+            vec![ParsedArgs {
+                arg_name: String::from("stack"),
+                arg_value: ArgValue::Multiple(vec![String::from("year"), String::from("month")]),
+            }],
+            vec![final_target_dir.clone(), final_target_dir.clone()],
         );
 
         let content_of_target_dir = fs::read_dir(target_dir.clone()).unwrap();

@@ -1,25 +1,25 @@
 use std::fs::File;
 use std::sync::{Arc, Mutex};
+
+#[derive(Debug)]
 pub struct SortingStrategy {
-    pub method_chain: Vec<fn(&File) -> String>,
+    pub action: fn(&File) -> String,
+    pub name: String,
 }
 
 impl SortingStrategy {
-    pub fn set_method_chain (&mut self, method_chain: Vec<fn(&File) -> String>) {
-        self.method_chain = method_chain;
+    pub fn new (name: String, action: fn(&File) -> String) -> SortingStrategy {
+        SortingStrategy { action, name }
     }
 
-    pub fn new () -> Self {
-        Self { method_chain: vec![] }
-    }
-
-    pub fn iter (&self, file: File) -> impl Iterator<Item=String> + '_ {
+    pub fn apply (&self, file: &File) -> String {
+        println!("{:#?}", file);
         let file_mutex = Arc::new(Mutex::new(file));
+        let file_clone = Arc::clone(&file_mutex);
+        let file_lock = file_clone.lock().unwrap();
+        let result = (self.action)(&*file_lock);
+        println!("{:#?}", result);
 
-        self.method_chain.iter().map(move |func| {
-            let file_clone = Arc::clone(&file_mutex);
-            let file_lock = file_clone.lock().unwrap();
-            func(&*file_lock)
-        })
+        return result;
     }
 }
