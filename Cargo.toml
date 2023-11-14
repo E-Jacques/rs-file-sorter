@@ -7,5 +7,7 @@ test = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = "0.4"
+chrono = "0.4.31"
+filetime = "0.2.22"
+regex = "1.10.2"
 
