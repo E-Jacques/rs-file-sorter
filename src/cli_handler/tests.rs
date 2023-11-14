@@ -249,14 +249,9 @@ mod parser_tests {
     }
 }
 
-mod cli_handler_tests {}
-
 mod cli_handler_builder_tests {
     use crate::{
-        cli_handler::{
-            cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
-            parser::ArgValue,
-        },
+        cli_handler::cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
         utils::logger::Logger,
     };
 
@@ -508,7 +503,10 @@ mod cli_handler_builder_tests {
         let params = cli_handler.command_handlers[0].params.clone();
         assert_eq!(params.len(), 1);
         assert_eq!(params[0].name, String::from("param-1"));
-        assert_eq!(params[0].description, String::from("description of param-1"));
+        assert_eq!(
+            params[0].description,
+            String::from("description of param-1")
+        );
     }
 
     #[test]
@@ -536,9 +534,15 @@ mod cli_handler_builder_tests {
         let params = cli_handler.command_handlers[0].params.clone();
         assert_eq!(params.len(), 2);
         assert_eq!(params[0].name, String::from("param-1"));
-        assert_eq!(params[0].description, String::from("description of param-1"));
+        assert_eq!(
+            params[0].description,
+            String::from("description of param-1")
+        );
         assert_eq!(params[1].name, String::from("param-2"));
-        assert_eq!(params[1].description, String::from("description of param-2"));
+        assert_eq!(
+            params[1].description,
+            String::from("description of param-2")
+        );
     }
 
     #[test]
@@ -577,5 +581,74 @@ mod cli_handler_builder_tests {
             .build();
 
         assert!(false);
+    }
+}
+
+mod cli_handler_tests {
+    #[test]
+    #[should_panic="[ERROR] [TEST_COMMAND] please provide a valid command."]
+    fn test_no_command_entered() {
+        todo!()
+    }
+
+    #[test]
+    #[should_panic="[ERROR] [TEST_COMMAND] 'your-command' isn't a valid command. Please type help to receive more informations."]
+    fn test_command_not_found() {
+        todo!()
+    }
+    
+    #[test]
+    #[should_panic="[ERROR] [my-command] unknown argument: got 'arg-unknown' when expecting arg-1, arg-2. See help to get more informations."]
+    fn test_received_unknown_argument () {
+        todo!()
+    }
+
+    #[test]
+    #[should_panic="[ERROR] [my-command] unexpected argument value for arg-1: expected single or multiple values but received no value."]
+    fn test_received_unexpected_argument_value () {
+        todo!()
+    }
+
+    #[test]
+    #[should_panic="[ERROR] [my-command] too much parameters: expected 2 parameters but received 3."]
+    fn test_error_too_much_parameters () {
+        todo!()
+    }
+
+    #[test]
+    #[should_panic="[ERROR] [my-command] not enough parameters: expected 2 parameters bu recieved 1."]
+    fn test_error_not_enough_parameters () {
+        todo!()
+    }
+
+    #[test]
+    fn test_correctly_call_handler_when_input_valid() {
+        todo!()
+    }
+
+    #[test]
+    fn test_correctly_display_help () {
+        todo!()
+    }
+
+    #[test]
+    fn test_correctly_display_help_for_specific_command () {
+        todo!()
+    }
+
+    #[test]
+    fn test_correctly_call_help () {
+        todo!()
+    }
+
+    #[test]
+    fn test_correctly_call_help_for_specific_command () {
+        todo!()
+    }
+
+    #[test]
+    #[should_panic="[ERROR] [TEST_COMMAND] command invalid. Please type 'help' to get the list of valid commands."]
+    fn test_help_for_unknown_command () {
+        todo!()
     }
 }
