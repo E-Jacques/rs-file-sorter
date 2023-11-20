@@ -16,30 +16,28 @@ pub struct CliHandlerCommand {
 }
 
 impl CliHandlerCommand {
-    pub fn help(&self) {
+    pub fn help(&self) -> String {
         let command_name = &self.command_name;
-        println!("COMMANDS");
-        print!("\t");
-        println!(
-            "{command_name}: {} (enter 'help {command_name}' for more information)",
+        let mut help_output = String::from("COMMANDS");
+        help_output.push_str(&format!(
+            "\t{command_name}: {} (enter 'help {command_name}' for more information)\n",
             self.command_description,
-        );
-        println!("");
-        println!("PARAMETERS");
+        ));
+        help_output.push_str("\n");
+        help_output.push_str("PARAMETERS\n");
         for param in &self.params {
-            print!("\t");
-            println!("{}: {}", param.name, param.description);
+            help_output.push_str(&format!("\t{}: {}\n", param.name, param.description));
         }
-        println!("");
-        println!("ARGUMENTS");
+        help_output.push_str("\n");
+        help_output.push_str("ARGUMENTS");
         for arg in &self.args {
-            print!("\t");
-            println!(
-                "--{}: {}. Accepted values: {:#?}",
+            help_output.push_str(&format!(
+                "\t--{}: {}. Accepted values: {:#?}\n",
                 arg.name, arg.description, arg.expected_value_type
-            );
+            ));
         }
-        println!("");
+
+        help_output
     }
 }
 
@@ -62,7 +60,7 @@ impl CliHandler {
 
         // If command is help, we want to provide the associated help message.
         if command_name.to_string() == String::from("help") {
-            self.handle_help(&command);
+            println!("{}", self.handle_help(&command));
             return;
         }
 
@@ -84,19 +82,19 @@ impl CliHandler {
         command_handler_fn(&parsed_command.clone())
     }
 
-    fn handle_help(&self, command: &Vec<String>) {
+    fn handle_help(&self, command: &Vec<String>) -> String {
         match command.get(1) {
             None => self.help(),
-            Some(specific_command_name) => {
-                match self.command_handler_from(specific_command_name) {
-                    Some(specific_command_handler) => specific_command_handler.help(),
-                    None => {
-                        self.logger.error(
-                            "Command invalid. Please type help to get the list of valid commands.",
-                        );
-                    }
-                };
-            }
+            Some(specific_command_name) => match self.command_handler_from(specific_command_name) {
+                Some(specific_command_handler) => specific_command_handler.help(),
+                None => {
+                    self.logger.error(
+                        "Command invalid. Please type help to get the list of valid commands.",
+                    );
+
+                    return String::from("unknown command");
+                }
+            },
         }
     }
 
@@ -126,18 +124,18 @@ impl CliHandler {
         command
     }
 
-    fn help(&self) {
-        println!("COMMANDS");
+    fn help(&self) -> String {
+        let mut help_output = String::from("COMMANDS");
         for command_handler in &self.command_handlers {
-            print!("\t");
-            println!(
-                "{}: {} (enter 'help {}' for more information)",
+            help_output.push_str(&format!(
+                "\t{}: {} (enter 'help {}' for more information)\n",
                 command_handler.command_name,
                 command_handler.command_description,
                 command_handler.command_name
-            );
+            ));
         }
-        println!("");
+
+        help_output
     }
 
     fn validate(
@@ -162,7 +160,9 @@ impl CliHandler {
                     ));
                     return false;
                 }
-                super::compound_structs::ArgValidationErrorEnum::UnexpectedValue(received_value) => {
+                super::compound_structs::ArgValidationErrorEnum::UnexpectedValue(
+                    received_value,
+                ) => {
                     let possible_values = arg.clone().expected_value_type;
                     self.logger.error(&format!(
                         "Unexpected argument value: expected {:#?} but received {:#?}.",
