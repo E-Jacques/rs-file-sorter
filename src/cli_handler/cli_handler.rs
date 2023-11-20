@@ -18,9 +18,9 @@ pub struct CliHandlerCommand {
 impl CliHandlerCommand {
     pub fn help(&self) -> String {
         let command_name = &self.command_name;
-        let mut help_output = String::from("COMMANDS");
+        let mut help_output = String::from("COMMAND\n");
         help_output.push_str(&format!(
-            "\t{command_name}: {} (enter 'help {command_name}' for more information)\n",
+            "\t{command_name}: {} (enter 'help {command_name}' for more informations)\n",
             self.command_description,
         ));
         help_output.push_str("\n");
@@ -29,11 +29,18 @@ impl CliHandlerCommand {
             help_output.push_str(&format!("\t{}: {}\n", param.name, param.description));
         }
         help_output.push_str("\n");
-        help_output.push_str("ARGUMENTS");
+        help_output.push_str("ARGUMENTS\n");
         for arg in &self.args {
+            let expected_value_types_string: String = arg
+                .expected_value_type
+                .clone()
+                .into_iter()
+                .map(|value_type| Into::<String>::into(value_type))
+                .collect::<Vec<String>>()
+                .join(", ");
             help_output.push_str(&format!(
-                "\t--{}: {}. Accepted values: {:#?}\n",
-                arg.name, arg.description, arg.expected_value_type
+                "\t--{}: {}. Accepted values: {}\n",
+                arg.name, arg.description, expected_value_types_string
             ));
         }
 
@@ -64,11 +71,13 @@ impl CliHandler {
             return;
         }
 
+        if command_name.is_empty() { self.logger.error("please provide a valid command."); }
+
         let command_handler = match self.command_handler_from(command_name) {
             Some(value) => value,
             None => {
                 self.logger
-                    .error("Command invalid. Please type help to get the list of valid commands.");
+                    .error(&format!("'{}' isn't a valid command. Please type 'help' to get the list of valid commands.", command_name));
                 return;
             }
         };
@@ -89,7 +98,7 @@ impl CliHandler {
                 Some(specific_command_handler) => specific_command_handler.help(),
                 None => {
                     self.logger.error(
-                        "Command invalid. Please type help to get the list of valid commands.",
+                        "command invalid. Please type 'help' to get the list of valid commands.",
                     );
 
                     return String::from("unknown command");
@@ -125,10 +134,10 @@ impl CliHandler {
     }
 
     fn help(&self) -> String {
-        let mut help_output = String::from("COMMANDS");
+        let mut help_output = String::from("COMMANDS\n");
         for command_handler in &self.command_handlers {
             help_output.push_str(&format!(
-                "\t{}: {} (enter 'help {}' for more information)\n",
+                "\t{}: {} (enter 'help {}' for more informations)\n",
                 command_handler.command_name,
                 command_handler.command_description,
                 command_handler.command_name
@@ -145,7 +154,9 @@ impl CliHandler {
     ) -> bool {
         for arg in command_specification.args.clone().into_iter() {
             match arg.validate(parsed_command.clone()) {
-                super::compound_structs::ArgValidationErrorEnum::NoError => todo!(),
+                super::compound_structs::ArgValidationErrorEnum::NoError => {
+                    continue;
+                },
                 super::compound_structs::ArgValidationErrorEnum::UnknownArgument => {
                     let all_argument = command_specification
                         .args
@@ -154,8 +165,8 @@ impl CliHandler {
                         .map(|arg| arg.name)
                         .collect::<Vec<String>>()
                         .join(", ");
-                    self.logger.error(&format!(
-                        "Unknown argument: expected {} but received {}.",
+                    command_specification.logger.error(&format!(
+                        "unknown argument: expected {} but received {}.",
                         all_argument, arg.name
                     ));
                     return false;
@@ -164,8 +175,8 @@ impl CliHandler {
                     received_value,
                 ) => {
                     let possible_values = arg.clone().expected_value_type;
-                    self.logger.error(&format!(
-                        "Unexpected argument value: expected {:#?} but received {:#?}.",
+                    command_specification.logger.error(&format!(
+                        "unexpected argument value: expected {:#?} but received {:#?}.",
                         possible_values, received_value
                     ));
                     return false;
@@ -174,15 +185,15 @@ impl CliHandler {
         }
 
         if command_specification.params.len() < parsed_command.params.len() {
-            self.logger.error(&format!(
-                "Too much parameters: expected {} but recevied {}.",
+            command_specification.logger.error(&format!(
+                "too much parameters: expected {} parameters but received {}.",
                 command_specification.params.len(),
                 parsed_command.params.len()
             ));
             return false;
         } else if command_specification.params.len() > parsed_command.params.len() {
-            self.logger.error(&format!(
-                "Not enough parameters: expected {} but recevied {}.",
+            command_specification.logger.error(&format!(
+                "not enough parameters: expected {} parameters but received {}.",
                 command_specification.params.len(),
                 parsed_command.params.len()
             ));
@@ -190,5 +201,115 @@ impl CliHandler {
         }
 
         true
+    }
+}
+
+#[cfg(test)]
+mod cli_handler_help_tests {
+    use crate::{
+        cli_handler::cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
+        utils::logger::Logger,
+    };
+
+    #[test]
+    fn test_correctly_display_help() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("TEST_COMMAND", true))
+            .command(
+                String::from("my-command"),
+                String::from("my-command's description"),
+                Logger::new("my-command", true),
+            )
+            .args(
+                String::from("arg-1"),
+                String::from("desc for arg-1"),
+                vec![ArgValueTypes::NoValue],
+            )
+            .args(
+                String::from("arg-2"),
+                String::from("desc for arg-1"),
+                vec![ArgValueTypes::Single],
+            )
+            .params(String::from("params-1"), String::from("desc for params-1"))
+            .handler(|_| ())
+            .command(
+                String::from("command-2"),
+                String::from("command-2's description"),
+                Logger::new("my-command", true),
+            )
+            .handler(|_| ())
+            .build();
+
+        let help_output = cli_handler.handle_help(&vec![String::from("help")]);
+        let expected_output = String::from("COMMANDS\n\tmy-command: my-command's description (enter 'help my-command' for more informations)\n\tcommand-2: command-2's description (enter 'help command-2' for more informations)\n");
+
+        assert_eq!(help_output, expected_output);
+    }
+
+    #[test]
+    fn test_correctly_display_help_for_specific_command() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("TEST_COMMAND", true))
+            .command(
+                String::from("my-command"),
+                String::from("my-command's description"),
+                Logger::new("my-command", true),
+            )
+            .args(
+                String::from("arg-1"),
+                String::from("desc for arg-1"),
+                vec![ArgValueTypes::NoValue],
+            )
+            .args(
+                String::from("arg-2"),
+                String::from("desc for arg-2"),
+                vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
+            )
+            .params(String::from("params-1"), String::from("desc for params-1"))
+            .handler(|_| ())
+            .command(
+                String::from("command-2"),
+                String::from("command-2's description"),
+                Logger::new("my-command", true),
+            )
+            .handler(|_| ())
+            .build();
+
+        let help_output =
+            cli_handler.handle_help(&vec![String::from("help"), String::from("my-command")]);
+        let expected_output = String::from("COMMAND\n\tmy-command: my-command's description (enter 'help my-command' for more informations)\n\nPARAMETERS\n\tparams-1: desc for params-1\n\nARGUMENTS\n\t--arg-1: desc for arg-1. Accepted values: NoValue\n\t--arg-2: desc for arg-2. Accepted values: Single, Multiple\n");
+
+        assert_eq!(help_output, expected_output);
+    }
+
+    #[test]
+    #[should_panic = "[ERROR] [TEST_COMMAND] command invalid. Please type 'help' to get the list of valid commands."]
+    fn test_help_for_unknown_command() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("TEST_COMMAND", true))
+            .command(
+                String::from("my-command"),
+                String::from("my-command's description"),
+                Logger::new("my-command", true),
+            )
+            .args(
+                String::from("arg-1"),
+                String::from("desc for arg-1"),
+                vec![ArgValueTypes::NoValue],
+            )
+            .args(
+                String::from("arg-2"),
+                String::from("desc for arg-1"),
+                vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
+            )
+            .params(String::from("params-1"), String::from("desc for params-1"))
+            .handler(|_| ())
+            .command(
+                String::from("command-2"),
+                String::from("command-2's description"),
+                Logger::new("my-command", true),
+            )
+            .handler(|_| ())
+            .build();
+
+        let _ =
+            cli_handler.handle_help(&vec![String::from("help"), String::from("unknown-command")]);
     }
 }

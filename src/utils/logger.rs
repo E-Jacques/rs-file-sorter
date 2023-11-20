@@ -7,7 +7,7 @@ pub struct Logger {
 
 impl Clone for Logger {
     fn clone(&self) -> Self {
-        Self { name: self.name.clone(), debug_mode: self.debug_mode.clone() }
+        Self { name: self.name, debug_mode: self.debug_mode.clone() }
     }
 }
 

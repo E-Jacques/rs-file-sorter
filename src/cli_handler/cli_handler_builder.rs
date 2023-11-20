@@ -13,6 +13,16 @@ pub enum ArgValueTypes {
     Single,
 }
 
+impl From<ArgValueTypes> for String {
+    fn from(value: ArgValueTypes) -> Self {
+        match value {
+            ArgValueTypes::NoValue => String::from("NoValue"),
+            ArgValueTypes::Multiple => String::from("Multiple"),
+            ArgValueTypes::Single => String::from("Single"),
+        }
+    }
+}
+
 pub struct CliHandlerBuilder {
     current_command: Option<CommandBuilder>,
     current_args: Option<Vec<ArgBuilder>>,
