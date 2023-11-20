@@ -35,12 +35,13 @@ impl CliHandlerBuilder {
     }
 
     pub fn command(mut self, name: String, description: String, logger: Logger) -> Self {
-        // Error case isn't problematic in command method.
+        // Error case isn't problematic in 'command' method.
         // It only means that we're initiating the first command specification.
         let _ = self.push_current_command();
 
         self.current_args = None;
         self.current_params = None;
+        self.current_handler = None;
         self.current_command = Some(CommandBuilder {
             name,
             description,

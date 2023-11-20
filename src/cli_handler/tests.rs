@@ -1,3 +1,4 @@
+#[cfg(test)]
 mod parser_tests {
     use crate::cli_handler::parser::{parse_cli, ArgValue};
 
@@ -249,6 +250,7 @@ mod parser_tests {
     }
 }
 
+#[cfg(test)]
 mod cli_handler_builder_tests {
     use crate::{
         cli_handler::cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
@@ -582,8 +584,30 @@ mod cli_handler_builder_tests {
 
         assert!(false);
     }
+
+    #[test]
+    fn test_specification_multiple_commands() {
+        let logger = Logger::new("TEST_COMMAND", true);
+        let cli_handler = CliHandlerBuilder::new(logger)
+            .command(
+                String::from("my-command"),
+                String::from("my description"),
+                Logger::new("my-command", true),
+            )
+            .handler(|_| ())
+            .command(
+                String::from("my-command-2"),
+                String::from("my description for my-command-2"),
+                Logger::new("my-command-2", true),
+            )
+            .handler(|_| ())
+            .build();
+
+        assert_eq!(cli_handler.command_handlers.len(), 2);
+    }
 }
 
+#[cfg(test)]
 mod cli_handler_tests {
     #[test]
     #[should_panic="[ERROR] [TEST_COMMAND] please provide a valid command."]
