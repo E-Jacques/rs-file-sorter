@@ -154,42 +154,8 @@ impl CliHandler {
         command_specification: CliHandlerCommand,
         parsed_command: ParsedCommand,
     ) -> bool {
-        for arg in command_specification.args.clone().into_iter() {
-            match arg.validate(parsed_command.clone()) {
-                super::compound_structs::ArgValidationErrorEnum::NoError => {
-                    continue;
-                }
-                super::compound_structs::ArgValidationErrorEnum::UnknownArgument => {
-                    let all_argument = command_specification
-                        .args
-                        .clone()
-                        .into_iter()
-                        .map(|arg| arg.name)
-                        .collect::<Vec<String>>()
-                        .join(", ");
-                    command_specification.logger.error(&format!(
-                        "unknown argument: got '{}' when expecting {}. See 'help' to get more informations.",
-                        arg.name, all_argument
-                    ));
-                    return false;
-                }
-                super::compound_structs::ArgValidationErrorEnum::UnexpectedValue(
-                    received_value,
-                ) => {
-                    let possible_values = arg.clone().expected_value_type;
-                    let possible_values_string = possible_values
-                        .into_iter()
-                        .map(|val| Into::<String>::into(val.clone()))
-                        .collect::<Vec<String>>()
-                        .join(", ");
-                    let received_value_string = Into::<String>::into(received_value);
-                    command_specification.logger.error(&format!(
-                        "unexpected argument value for {}: expected {} but received {}.",
-                        arg.name, possible_values_string, received_value_string
-                    ));
-                    return false;
-                }
-            }
+        if let Some(value) = self.validate_args(&command_specification, &parsed_command) {
+            return value;
         }
 
         if command_specification.params.len() < parsed_command.params.len() {
@@ -209,6 +175,66 @@ impl CliHandler {
         }
 
         true
+    }
+
+    fn validate_args(
+        &self,
+        command_specification: &CliHandlerCommand,
+        parsed_command: &ParsedCommand,
+    ) -> Option<bool> {
+        let arg_specification_names = command_specification
+            .args
+            .clone()
+            .into_iter()
+            .map(|arg| arg.name)
+            .collect::<Vec<String>>();
+
+        for arg in command_specification.args.clone().into_iter() {
+            match arg.validate(parsed_command.clone()) {
+                super::compound_structs::ArgValidationErrorEnum::NoError => {
+                    continue;
+                }
+                super::compound_structs::ArgValidationErrorEnum::UnknownArgument => {
+                    command_specification.logger.error(&format!(
+                    "unknown argument: got '{}' when expecting {}. See 'help' to get more informations.",
+                    arg.name, arg_specification_names.join(", ")
+                ));
+                    return Some(false);
+                }
+                super::compound_structs::ArgValidationErrorEnum::UnexpectedValue(
+                    received_value,
+                ) => {
+                    let possible_values = arg.clone().expected_value_type;
+                    let possible_values_string = possible_values
+                        .into_iter()
+                        .map(|val| Into::<String>::into(val.clone()))
+                        .collect::<Vec<String>>()
+                        .join(", ");
+                    let received_value_string = Into::<String>::into(received_value);
+                    command_specification.logger.error(&format!(
+                        "unexpected argument value for {}: expected {} but received {}.",
+                        arg.name, possible_values_string, received_value_string
+                    ));
+                    return Some(false);
+                }
+            }
+        }
+
+        for arg_name in parsed_command
+            .clone()
+            .args
+            .into_iter()
+            .map(|arg| arg.arg_name)
+        {
+            if !arg_specification_names.contains(&arg_name) {
+                command_specification.logger.error(&format!(
+                "unknown argument: got '{}' when expecting {}. See 'help' to get more informations.",
+                arg_name, arg_specification_names.clone().join(", ")
+            ));
+                return Some(false);
+            }
+        }
+        None
     }
 }
 

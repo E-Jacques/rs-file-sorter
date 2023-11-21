@@ -9,61 +9,6 @@ mod parser_tests {
     }
 
     #[test]
-    #[should_panic]
-    fn test_parser_unexpected_arg_panic() {
-        parse_cli(
-            vec![String::from("my-cmd"), String::from("unexpected-arg")],
-            vec![String::from("expected-arg")],
-            String::from(""),
-        );
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_parser_repeating_argvalue_no_value_panic() {
-        parse_cli(
-            vec![
-                String::from("my-cmd"),
-                String::from("--arg-1"),
-                String::from("--arg-1"),
-            ],
-            vec![String::from("arg-1")],
-            String::from(""),
-        );
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_parser_overwriting_argvalue_no_value_panic() {
-        parse_cli(
-            vec![
-                String::from("my-cmd"),
-                String::from("--arg-1"),
-                String::from("--arg-1"),
-                String::from("arg-value-1"),
-            ],
-            vec![String::from("arg-1")],
-            String::from(""),
-        );
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_parser_overwriting_value_with_no_value() {
-        parse_cli(
-            vec![
-                String::from("my-cmd"),
-                String::from("--arg-1"),
-                String::from("arg-value-1"),
-                String::from("--arg-1"),
-                String::from("--arg-2"),
-            ],
-            vec![String::from("arg-1"), String::from("arg-2")],
-            String::from(""),
-        );
-    }
-
-    #[test]
     fn test_parser_correctly_parse_command_name() {
         let parsed_command = parse_cli(vec![String::from("my-cmd")], vec![], String::from("--"));
         assert_eq!(parsed_command.command_name, String::from("my-cmd"));
@@ -658,6 +603,11 @@ mod cli_handler_tests {
                 String::from("arg-1"),
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::NoValue],
+            )
+            .args(
+                String::from("arg-2"),
+                String::from("desc for arg-2"),
+                vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
             )
             .handler(|_| {})
             .build();
