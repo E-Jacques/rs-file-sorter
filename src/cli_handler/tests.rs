@@ -1,3 +1,4 @@
+#[cfg(test)]
 mod parser_tests {
     use crate::cli_handler::parser::{parse_cli, ArgValue};
 
@@ -5,61 +6,6 @@ mod parser_tests {
     #[should_panic(expected = "[Cli Parser] Expect to receive non-empty command input.")]
     fn test_parser_no_command_panic() {
         parse_cli(vec![], vec![], String::from(""));
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_parser_unexpected_arg_panic() {
-        parse_cli(
-            vec![String::from("my-cmd"), String::from("unexpected-arg")],
-            vec![String::from("expected-arg")],
-            String::from(""),
-        );
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_parser_repeating_argvalue_no_value_panic() {
-        parse_cli(
-            vec![
-                String::from("my-cmd"),
-                String::from("--arg-1"),
-                String::from("--arg-1"),
-            ],
-            vec![String::from("arg-1")],
-            String::from(""),
-        );
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_parser_overwriting_argvalue_no_value_panic() {
-        parse_cli(
-            vec![
-                String::from("my-cmd"),
-                String::from("--arg-1"),
-                String::from("--arg-1"),
-                String::from("arg-value-1"),
-            ],
-            vec![String::from("arg-1")],
-            String::from(""),
-        );
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_parser_overwriting_value_with_no_value() {
-        parse_cli(
-            vec![
-                String::from("my-cmd"),
-                String::from("--arg-1"),
-                String::from("arg-value-1"),
-                String::from("--arg-1"),
-                String::from("--arg-2"),
-            ],
-            vec![String::from("arg-1"), String::from("arg-2")],
-            String::from(""),
-        );
     }
 
     #[test]
@@ -249,14 +195,10 @@ mod parser_tests {
     }
 }
 
-mod cli_handler_tests {}
-
+#[cfg(test)]
 mod cli_handler_builder_tests {
     use crate::{
-        cli_handler::{
-            cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
-            parser::ArgValue,
-        },
+        cli_handler::cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
         utils::logger::Logger,
     };
 
@@ -508,7 +450,10 @@ mod cli_handler_builder_tests {
         let params = cli_handler.command_handlers[0].params.clone();
         assert_eq!(params.len(), 1);
         assert_eq!(params[0].name, String::from("param-1"));
-        assert_eq!(params[0].description, String::from("description of param-1"));
+        assert_eq!(
+            params[0].description,
+            String::from("description of param-1")
+        );
     }
 
     #[test]
@@ -536,9 +481,15 @@ mod cli_handler_builder_tests {
         let params = cli_handler.command_handlers[0].params.clone();
         assert_eq!(params.len(), 2);
         assert_eq!(params[0].name, String::from("param-1"));
-        assert_eq!(params[0].description, String::from("description of param-1"));
+        assert_eq!(
+            params[0].description,
+            String::from("description of param-1")
+        );
         assert_eq!(params[1].name, String::from("param-2"));
-        assert_eq!(params[1].description, String::from("description of param-2"));
+        assert_eq!(
+            params[1].description,
+            String::from("description of param-2")
+        );
     }
 
     #[test]
@@ -577,5 +528,239 @@ mod cli_handler_builder_tests {
             .build();
 
         assert!(false);
+    }
+
+    #[test]
+    fn test_specification_multiple_commands() {
+        let logger = Logger::new("TEST_COMMAND", true);
+        let cli_handler = CliHandlerBuilder::new(logger)
+            .command(
+                String::from("my-command"),
+                String::from("my description"),
+                Logger::new("my-command", true),
+            )
+            .handler(|_| ())
+            .command(
+                String::from("my-command-2"),
+                String::from("my description for my-command-2"),
+                Logger::new("my-command-2", true),
+            )
+            .handler(|_| ())
+            .build();
+
+        assert_eq!(cli_handler.command_handlers.len(), 2);
+    }
+}
+
+#[cfg(test)]
+mod cli_handler_tests {
+    use crate::{
+        cli_handler::{
+            cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
+            parser::ArgValue,
+        },
+        utils::logger::Logger,
+    };
+
+    #[test]
+    #[should_panic = "[ERROR] [TEST_COMMAND] please provide a valid command."]
+    fn test_no_command_entered() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("TEST_COMMAND", true))
+            .command(
+                String::from("command-1"),
+                String::from("description"),
+                Logger::new("command-1 log", false),
+            )
+            .handler(|_| {})
+            .build();
+        cli_handler.handle(String::from(""));
+    }
+
+    #[test]
+    #[should_panic = "[ERROR] [TEST_COMMAND] 'unknown-command' isn't a valid command. Please type 'help' to get the list of valid commands."]
+    fn test_command_not_found() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("TEST_COMMAND", true))
+            .command(
+                String::from("command-1"),
+                String::from("description"),
+                Logger::new("command-1 log", false),
+            )
+            .handler(|_| {})
+            .build();
+        cli_handler.handle(String::from("unknown-command"));
+    }
+
+    #[test]
+    #[should_panic = "[ERROR] [my-command] unknown argument: got 'arg-unknown' when expecting arg-1, arg-2. See 'help' to get more informations."]
+    fn test_received_unknown_argument() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("CLI LOG", true))
+            .command(
+                String::from("my-command"),
+                String::from("description"),
+                Logger::new("my-command", true),
+            )
+            .args(
+                String::from("arg-1"),
+                String::from("desc for arg-1"),
+                vec![ArgValueTypes::NoValue],
+            )
+            .args(
+                String::from("arg-2"),
+                String::from("desc for arg-2"),
+                vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
+            )
+            .handler(|_| {})
+            .build();
+        cli_handler.handle(String::from("my-command --arg-unknown"));
+    }
+
+    #[test]
+    #[should_panic = "[ERROR] [my-command] unexpected argument value for arg-1: expected Single, Multiple but received NoValue."]
+    fn test_received_unexpected_argument_value_got_no_value() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("CLI LOG", true))
+            .command(
+                String::from("my-command"),
+                String::from("description"),
+                Logger::new("my-command", true),
+            )
+            .args(
+                String::from("arg-1"),
+                String::from("desc for arg-1"),
+                vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
+            )
+            .handler(|_| {})
+            .build();
+        cli_handler.handle(String::from("my-command --arg-1"));
+    }
+
+    #[test]
+    #[should_panic = "[ERROR] [my-command] unexpected argument value for arg-1: expected NoValue, Multiple but received Single."]
+    fn test_received_unexpected_argument_value_got_single_value() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("CLI LOG", true))
+            .command(
+                String::from("my-command"),
+                String::from("description"),
+                Logger::new("my-command", true),
+            )
+            .args(
+                String::from("arg-1"),
+                String::from("desc for arg-1"),
+                vec![ArgValueTypes::NoValue, ArgValueTypes::Multiple],
+            )
+            .handler(|_| {})
+            .build();
+        cli_handler.handle(String::from("my-command --arg-1 test"));
+    }
+
+    #[test]
+    #[should_panic = "[ERROR] [my-command] unexpected argument value for arg-1: expected NoValue, Single but received Multiple."]
+    fn test_received_unexpected_argument_value_got_multiple_value() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("CLI LOG", true))
+            .command(
+                String::from("my-command"),
+                String::from("description"),
+                Logger::new("my-command", true),
+            )
+            .args(
+                String::from("arg-1"),
+                String::from("desc for arg-1"),
+                vec![ArgValueTypes::NoValue, ArgValueTypes::Single],
+            )
+            .handler(|_| {})
+            .build();
+        cli_handler.handle(String::from("my-command --arg-1 test --arg-1 test2"));
+    }
+
+    #[test]
+    #[should_panic = "[ERROR] [my-command] too much parameters: expected 2 parameters but received 3."]
+    fn test_error_too_much_parameters() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("CLI LOG", true))
+            .command(
+                String::from("my-command"),
+                String::from("description"),
+                Logger::new("my-command", true),
+            )
+            .params(String::from("param-1-name"), String::from("param-1-desc"))
+            .params(String::from("param-2-name"), String::from("param-2-desc"))
+            .handler(|_| {})
+            .build();
+        cli_handler.handle(String::from("my-command param-1 param-2 param-3"));
+    }
+
+    #[test]
+    #[should_panic = "[ERROR] [my-command] too much parameters: expected 0 parameters but received 1."]
+    fn test_error_too_much_parameters_no_parameters_specified() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("CLI LOG", true))
+            .command(
+                String::from("my-command"),
+                String::from("description"),
+                Logger::new("my-command", true),
+            )
+            .handler(|_| {})
+            .build();
+        cli_handler.handle(String::from("my-command param-1"));
+    }
+
+    #[test]
+    #[should_panic = "[ERROR] [my-command] not enough parameters: expected 2 parameters but received 1."]
+    fn test_error_not_enough_parameters_some_parameters_specified() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("CLI LOG", true))
+            .command(
+                String::from("my-command"),
+                String::from("description"),
+                Logger::new("my-command", true),
+            )
+            .params(String::from("param-1-name"), String::from("param-1-desc"))
+            .params(String::from("param-2-name"), String::from("param-2-desc"))
+            .handler(|_| {})
+            .build();
+        cli_handler.handle(String::from("my-command param-1"));
+    }
+
+    #[test]
+    // We use should_panic to insure that callback is executed
+    #[should_panic = "handler executed"]
+    fn test_correctly_call_handler_when_input_valid() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("CLI LOG", true))
+            .command(
+                String::from("my-command"),
+                String::from("description"),
+                Logger::new("my-command", true),
+            )
+            .args(
+                String::from("arg-1"),
+                String::from("desc for arg-1"),
+                vec![ArgValueTypes::NoValue],
+            )
+            .args(
+                String::from("arg-2"),
+                String::from("desc for arg-1"),
+                vec![ArgValueTypes::Single],
+            )
+            .params(String::from("params-1"), String::from("desc for params-1"))
+            // It's hard to test the fact that the handler will be called.
+            // TODO: That's a futur me assignment.
+            .handler(|parsed_command| {
+                // Here we want to check that the correct parsed_command is passed to the handler.
+                // A more intense is done in the `parser_tests` module (see above)
+                assert_eq!(parsed_command.command_name, String::from("my-command"));
+                assert_eq!(parsed_command.args.len(), 2);
+                assert_eq!(parsed_command.args[0].arg_name, String::from("arg-1"));
+                assert_eq!(parsed_command.args[0].arg_value, ArgValue::NoValue);
+                assert_eq!(parsed_command.args[1].arg_name, String::from("arg-2"));
+                assert_eq!(
+                    parsed_command.args[1].arg_value,
+                    ArgValue::Single(String::from("arg-2-value"))
+                );
+                assert_eq!(parsed_command.params.len(), 1);
+                assert_eq!(parsed_command.params[0], String::from("param-1-value"));
+
+                panic!("handler executed");
+            })
+            .build();
+
+        cli_handler.handle(String::from(
+            "my-command --arg-1 --arg-2 arg-2-value param-1-value",
+        ));
     }
 }

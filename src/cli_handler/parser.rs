@@ -9,7 +9,7 @@ pub enum ArgValue {
 }
 
 impl ArgValue {
-    pub fn is_same_type (&self, compare_to: ArgValueTypes) -> bool {
+    pub fn is_same_type(&self, compare_to: ArgValueTypes) -> bool {
         match self {
             ArgValue::NotProvided => true,
             ArgValue::NoValue => compare_to == ArgValueTypes::NoValue,
@@ -26,6 +26,17 @@ impl std::fmt::Display for ArgValue {
             ArgValue::NoValue => write!(f, "alone"),
             ArgValue::Multiple(_) => write!(f, "multiples values"),
             ArgValue::Single(_) => write!(f, "only one value"),
+        }
+    }
+}
+
+impl From<ArgValue> for String {
+    fn from(value: ArgValue) -> Self {
+        match value {
+            ArgValue::NotProvided => String::from("NotProvided"),
+            ArgValue::NoValue => String::from("NoValue"),
+            ArgValue::Multiple(_) => String::from("Multiple"),
+            ArgValue::Single(_) => String::from("Single"),
         }
     }
 }
@@ -75,10 +86,15 @@ pub fn parse_cli(
                 .expect("[Cli Parser] An error occured.");
 
             if current_arg_name != "" {
-                args.iter_mut()
-                    .find(|a| a.arg_name == current_arg_name)
-                    .expect("Argument not found")
-                    .arg_value = ArgValue::NoValue;
+                match args.iter_mut().find(|a| a.arg_name == current_arg_name) {
+                    Some(argument) => argument.arg_value = ArgValue::NoValue,
+                    None => {
+                        args.push(ParsedArgs {
+                            arg_name: current_arg_name,
+                            arg_value: ArgValue::NotProvided,
+                        });
+                    }
+                }
             }
 
             current_arg_name = String::from(arg_name);
@@ -88,10 +104,17 @@ pub fn parse_cli(
         if current_arg_name == "" {
             params.push(String::from(v));
         } else {
-            let current_arg = args
-                .iter_mut()
-                .find(|a| a.arg_name == current_arg_name)
-                .expect("Argument not found");
+            let current_arg = match args.iter_mut().find(|a| a.arg_name == current_arg_name.clone()) {
+                Some(argument) => argument,
+                None => {
+                    let parsed_arg = ParsedArgs {
+                        arg_name: current_arg_name.clone(),
+                        arg_value: ArgValue::NotProvided,
+                    };
+                    args.push(parsed_arg);
+                    args.iter_mut().find(|a| a.arg_name == current_arg_name).expect("The correct argument have just been added previously. Should be able to find it in vector.")
+                }
+            };
 
             current_arg.arg_value = match &current_arg.arg_value {
                 ArgValue::NotProvided => ArgValue::Single(String::from(v)),
@@ -111,10 +134,15 @@ pub fn parse_cli(
     }
 
     if current_arg_name != "" {
-        args.iter_mut()
-            .find(|a| a.arg_name == current_arg_name)
-            .expect("Argument not found")
-            .arg_value = ArgValue::NoValue;
+        match args.iter_mut().find(|a| a.arg_name == current_arg_name) {
+            Some(argument) => argument.arg_value = ArgValue::NoValue,
+            None => {
+                args.push(ParsedArgs {
+                    arg_name: current_arg_name,
+                    arg_value: ArgValue::NotProvided,
+                });
+            }
+        }
     }
 
     ParsedCommand {
