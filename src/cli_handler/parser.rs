@@ -30,6 +30,17 @@ impl std::fmt::Display for ArgValue {
     }
 }
 
+impl From<ArgValue> for String{
+    fn from(value: ArgValue) -> Self {
+        match value {
+            ArgValue::NotProvided => String::from("NotProvided"),
+            ArgValue::NoValue => String::from("NoValue"),
+            ArgValue::Multiple(_) => String::from("Multiple"),
+            ArgValue::Single(_) => String::from("Single"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ParsedArgs {
     pub arg_name: String,

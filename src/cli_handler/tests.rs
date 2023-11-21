@@ -646,7 +646,7 @@ mod cli_handler_tests {
     }
 
     #[test]
-    #[should_panic = "[ERROR] [my-command] unknown argument: got 'arg-unknown' when expecting arg-1, arg-2. See help to get more informations."]
+    #[should_panic = "[ERROR] [my-command] unknown argument: got 'arg-unknown' when expecting arg-1, arg-2. See 'help' to get more informations."]
     fn test_received_unknown_argument() {
         let cli_handler = CliHandlerBuilder::new(Logger::new("CLI LOG", true))
             .command(
@@ -665,7 +665,7 @@ mod cli_handler_tests {
     }
 
     #[test]
-    #[should_panic = "[ERROR] [my-command] unexpected argument value for arg-1: expected single or multiple values but received no value."]
+    #[should_panic = "[ERROR] [my-command] unexpected argument value for arg-1: expected Single, Multiple but received NoValue."]
     fn test_received_unexpected_argument_value_got_no_value() {
         let cli_handler = CliHandlerBuilder::new(Logger::new("CLI LOG", true))
             .command(
@@ -684,7 +684,7 @@ mod cli_handler_tests {
     }
 
     #[test]
-    #[should_panic = "[ERROR] [my-command] unexpected argument value for arg-1: expected single or multiple values but received no value."]
+    #[should_panic = "[ERROR] [my-command] unexpected argument value for arg-1: expected NoValue, Multiple but received Single."]
     fn test_received_unexpected_argument_value_got_single_value() {
         let cli_handler = CliHandlerBuilder::new(Logger::new("CLI LOG", true))
             .command(
@@ -703,7 +703,7 @@ mod cli_handler_tests {
     }
 
     #[test]
-    #[should_panic = "[ERROR] [my-command] unexpected argument value for arg-1: expected single or multiple values but received no value."]
+    #[should_panic = "[ERROR] [my-command] unexpected argument value for arg-1: expected NoValue, Single but received Multiple."]
     fn test_received_unexpected_argument_value_got_multiple_value() {
         let cli_handler = CliHandlerBuilder::new(Logger::new("CLI LOG", true))
             .command(

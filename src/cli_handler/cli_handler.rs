@@ -71,7 +71,9 @@ impl CliHandler {
             return;
         }
 
-        if command_name.is_empty() { self.logger.error("please provide a valid command."); }
+        if command_name.is_empty() {
+            self.logger.error("please provide a valid command.");
+        }
 
         let command_handler = match self.command_handler_from(command_name) {
             Some(value) => value,
@@ -156,7 +158,7 @@ impl CliHandler {
             match arg.validate(parsed_command.clone()) {
                 super::compound_structs::ArgValidationErrorEnum::NoError => {
                     continue;
-                },
+                }
                 super::compound_structs::ArgValidationErrorEnum::UnknownArgument => {
                     let all_argument = command_specification
                         .args
@@ -166,8 +168,8 @@ impl CliHandler {
                         .collect::<Vec<String>>()
                         .join(", ");
                     command_specification.logger.error(&format!(
-                        "unknown argument: expected {} but received {}.",
-                        all_argument, arg.name
+                        "unknown argument: got '{}' when expecting {}. See 'help' to get more informations.",
+                        arg.name, all_argument
                     ));
                     return false;
                 }
@@ -175,9 +177,15 @@ impl CliHandler {
                     received_value,
                 ) => {
                     let possible_values = arg.clone().expected_value_type;
+                    let possible_values_string = possible_values
+                        .into_iter()
+                        .map(|val| Into::<String>::into(val.clone()))
+                        .collect::<Vec<String>>()
+                        .join(", ");
+                    let received_value_string = Into::<String>::into(received_value);
                     command_specification.logger.error(&format!(
-                        "unexpected argument value: expected {:#?} but received {:#?}.",
-                        possible_values, received_value
+                        "unexpected argument value for {}: expected {} but received {}.",
+                        arg.name, possible_values_string, received_value_string
                     ));
                     return false;
                 }
