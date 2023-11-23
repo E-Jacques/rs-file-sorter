@@ -1,4 +1,8 @@
 mod file_manipulator_tests {
+    use std::{env, fs::File};
+
+    use crate::utils::file_manipulator::get_year_number;
+
     mod to_absolute_path {
         use std::env;
 
@@ -20,26 +24,65 @@ mod file_manipulator_tests {
             let expected_pathbuf = env::current_dir().unwrap().join(path_string.clone());
             let expected_path_string = expected_pathbuf.as_os_str().to_str().unwrap();
             let transformed_absolute_path = to_absolute_path(path_string.clone());
-            
+
             assert_eq!(transformed_absolute_path, expected_path_string);
         }
     }
 
     mod get_month_number {
+        use std::{env, fs::File};
+
+        use crate::utils::file_manipulator::get_month_number;
+
         #[test]
         fn test_january() {
-            todo!()
+            let filename = "file_2021-01-08_F71C2883";
+            let full_path = env::current_dir()
+                .unwrap()
+                .join("tests")
+                .join("rsc")
+                .join("files")
+                .join(filename);
+
+            let file = File::open(full_path).expect("Should be able to access file, please check that 'tests/rsc/files/file_2021-01-08_F71C2883' is present");
+            let month_number =
+                get_month_number(&file).expect("Should be able to extract month number");
+
+            assert_eq!(month_number, 1u32);
         }
 
         #[test]
         fn test_december() {
-            todo!()
+            let filename = "file_2021-12-06_F4E4926F";
+            let full_path = env::current_dir()
+                .unwrap()
+                .join("tests")
+                .join("rsc")
+                .join("files")
+                .join(filename);
+
+            let file = File::open(full_path).expect("Should be able to access file, please check that 'tests/rsc/files/file_2021-12-06_F4E4926F' is present");
+            let month_number =
+                get_month_number(&file).expect("Should be able to extract month number");
+
+            assert_eq!(month_number, 12u32);
         }
     }
 
     #[test]
     fn test_get_year_number() {
-        todo!()
+        let filename = "file_2018-11-06_14835535";
+        let full_path = env::current_dir()
+            .unwrap()
+            .join("tests")
+            .join("rsc")
+            .join("files")
+            .join(filename);
+
+        let file = File::open(full_path).expect("Should be able to access file, please check that 'tests/rsc/files/file_2018-11-06_14835535' is present");
+        let year_number = get_year_number(&file).expect("Should be able to extract year number");
+
+        assert_eq!(year_number, 2018);
     }
 
     mod move_file {
@@ -51,7 +94,7 @@ mod file_manipulator_tests {
         #[test]
         #[should_panic]
         fn test_move_file_when_directory_dont_exists() {
-            todo!()
+            assert!(true)
         }
 
         #[test]
