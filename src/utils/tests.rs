@@ -86,20 +86,130 @@ mod file_manipulator_tests {
     }
 
     mod move_file {
+        use std::{env, fs};
+
+        use crate::utils::file_manipulator::move_file;
+
         #[test]
         fn test_move_file_when_directory_exists() {
-            todo!()
+            let filename = "test_move_file_1";
+            let from = env::current_dir()
+                .unwrap()
+                .join("tests")
+                .join("rsc")
+                .join("files")
+                .join(filename);
+            let to = env::current_dir()
+                .unwrap()
+                .join("tests")
+                .join("rsc")
+                .join("files")
+                .join("output")
+                .join(filename);
+
+            // create file
+            let _ = fs::write(from.clone(), "my content");
+
+            // function to test
+            match move_file(from, to.clone(), false) {
+                Err(_) => {
+                    // fail
+                    assert!(false)
+                }
+                Ok(_) => (),
+            };
+
+            match fs::read_to_string(to.clone()) {
+                Ok(content) => {
+                    println!("{}", content);
+                    // check that right file have be copy
+                    assert_eq!(content.as_str(), "my content");
+                    fs::remove_file(to).expect("Should be able to clean output directory");
+                }
+                Err(_) => {
+                    // fail
+                    assert!(false)
+                }
+            }
         }
 
         #[test]
-        #[should_panic]
         fn test_move_file_when_directory_dont_exists() {
-            assert!(true)
+            let filename = "test_move_file_2";
+            let from = env::current_dir()
+                .unwrap()
+                .join("tests")
+                .join("rsc")
+                .join("files")
+                .join(filename);
+            let to = env::current_dir()
+                .unwrap()
+                .join("tests")
+                .join("rsc")
+                .join("files")
+                .join("output")
+                .join("output_unknown_1")
+                .join(filename);
+
+            // create file
+            let _ = fs::write(from.clone(), "my content");
+
+            // function to test
+            match move_file(from.clone(), to.clone(), false) {
+                Err(_) => {
+                    fs::remove_file(from).expect("Should be able to delete test file");
+                    assert!(true)
+                }
+                Ok(_) => {
+                    fs::remove_file(from).expect("Should be able to delete test file");
+                    // fail
+                    assert!(false)
+                }
+            };
         }
 
         #[test]
         fn test_move_file_and_create_missing_directories() {
-            todo!()
+            let filename = "test_move_file_3";
+            let from = env::current_dir()
+                .unwrap()
+                .join("tests")
+                .join("rsc")
+                .join("files")
+                .join(filename);
+            let to_dir = env::current_dir()
+                .unwrap()
+                .join("tests")
+                .join("rsc")
+                .join("files")
+                .join("output")
+                .join("output_unknown_2");
+            let to = to_dir.clone().join(filename);
+
+            // create file
+            let _ = fs::write(from.clone(), "my content");
+
+            // function to test
+            match move_file(from, to.clone(), true) {
+                Err(_) => {
+                    // fail
+                    assert!(false)
+                }
+                Ok(_) => (),
+            };
+
+            match fs::read_to_string(to.clone()) {
+                Ok(content) => {
+                    // check that right file have be copy
+                    println!("{}", content);
+                    assert_eq!(content.as_str(), "my content");
+                    fs::remove_dir_all(to_dir).expect("Should be able to clean output directory");
+                }
+                Err(_) => {
+                    // fail
+                    assert!(false)
+                }
+            }
         }
     }
 }
