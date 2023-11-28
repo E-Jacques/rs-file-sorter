@@ -1,17 +1,21 @@
 use crate::{
-    sortering_strategies::sorting_strategy::SortingStrategy, utils::file_manipulator::move_file,
+    sortering_strategies::sorting_strategy::SortingStrategy, utils::{file_manipulator::move_file, logger::Logger},
 };
 use std::{
     fs::{read_dir, File},
     path::{Path, PathBuf},
 };
 
-pub fn sorter(
-    input_dir: &str,  // Need to be absolute
-    output_dir: &str, // Need to be absolute
+/// Need to be absolute
+pub fn sorter<'a>(
+    input_dir: &str,
+    output_dir: &str,
     sorting_strategies: Vec<&SortingStrategy>,
-    rename_error_handler: fn(&str, &str) -> (),
+    logger: Logger,
+    mut rename_error_handler: impl FnMut(&str, &str) -> (),
 ) {
+    logger.debug(&format!("sorter have been called with input_dir={input_dir} & output_dir={output_dir}."));
+    
     let files_list = read_dir(input_dir).unwrap();
     files_list.for_each(|f| {
         let file_name = f.unwrap().file_name();

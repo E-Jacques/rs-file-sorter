@@ -228,8 +228,8 @@ mod cli_handler_builder_tests {
                 String::from("my description"),
                 Logger::new("my-command", true),
             )
-            .handler(|_| ())
-            .handler(|_| ())
+            .handler(|_, _| ())
+            .handler(|_, _| ())
             .build();
 
         // Should have fail before.
@@ -255,7 +255,7 @@ mod cli_handler_builder_tests {
                 String::from("my description"),
                 Logger::new("my-command", true),
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .build();
 
         assert_eq!(cli_handler.command_handlers.len(), 1);
@@ -285,7 +285,7 @@ mod cli_handler_builder_tests {
                 String::from("description of arg-1"),
                 vec![ArgValueTypes::NoValue],
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .build();
 
         assert_eq!(cli_handler.command_handlers.len(), 1);
@@ -312,7 +312,7 @@ mod cli_handler_builder_tests {
                 String::from("description of arg-1"),
                 vec![ArgValueTypes::NoValue, ArgValueTypes::Single],
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .build();
 
         assert_eq!(cli_handler.command_handlers.len(), 1);
@@ -345,7 +345,7 @@ mod cli_handler_builder_tests {
                 String::from("description of arg-2"),
                 vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .build();
 
         assert_eq!(cli_handler.command_handlers.len(), 1);
@@ -387,7 +387,7 @@ mod cli_handler_builder_tests {
                 String::from("This is a description of arg-1"),
                 vec![ArgValueTypes::NoValue],
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .build();
 
         assert!(false);
@@ -408,7 +408,7 @@ mod cli_handler_builder_tests {
                 String::from("This is a description of arg-1"),
                 vec![],
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .build();
 
         assert!(false);
@@ -442,7 +442,7 @@ mod cli_handler_builder_tests {
                 String::from("param-1"),
                 String::from("description of param-1"),
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .build();
 
         assert_eq!(cli_handler.command_handlers.len(), 1);
@@ -473,7 +473,7 @@ mod cli_handler_builder_tests {
                 String::from("param-2"),
                 String::from("description of param-2"),
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .build();
 
         assert_eq!(cli_handler.command_handlers.len(), 1);
@@ -510,7 +510,7 @@ mod cli_handler_builder_tests {
                 String::from("param-1"),
                 String::from("This is a description of param-1"),
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .build();
 
         assert!(false);
@@ -539,13 +539,13 @@ mod cli_handler_builder_tests {
                 String::from("my description"),
                 Logger::new("my-command", true),
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .command(
                 String::from("my-command-2"),
                 String::from("my description for my-command-2"),
                 Logger::new("my-command-2", true),
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .build();
 
         assert_eq!(cli_handler.command_handlers.len(), 2);
@@ -571,7 +571,7 @@ mod cli_handler_tests {
                 String::from("description"),
                 Logger::new("command-1 log", false),
             )
-            .handler(|_| {})
+            .handler(|_, _| {})
             .build();
         cli_handler.handle(String::from(""));
     }
@@ -585,7 +585,7 @@ mod cli_handler_tests {
                 String::from("description"),
                 Logger::new("command-1 log", false),
             )
-            .handler(|_| {})
+            .handler(|_, _| {})
             .build();
         cli_handler.handle(String::from("unknown-command"));
     }
@@ -609,7 +609,7 @@ mod cli_handler_tests {
                 String::from("desc for arg-2"),
                 vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
             )
-            .handler(|_| {})
+            .handler(|_, _| {})
             .build();
         cli_handler.handle(String::from("my-command --arg-unknown"));
     }
@@ -628,7 +628,7 @@ mod cli_handler_tests {
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
             )
-            .handler(|_| {})
+            .handler(|_, _| {})
             .build();
         cli_handler.handle(String::from("my-command --arg-1"));
     }
@@ -647,7 +647,7 @@ mod cli_handler_tests {
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::NoValue, ArgValueTypes::Multiple],
             )
-            .handler(|_| {})
+            .handler(|_, _| {})
             .build();
         cli_handler.handle(String::from("my-command --arg-1 test"));
     }
@@ -666,7 +666,7 @@ mod cli_handler_tests {
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::NoValue, ArgValueTypes::Single],
             )
-            .handler(|_| {})
+            .handler(|_, _| {})
             .build();
         cli_handler.handle(String::from("my-command --arg-1 test --arg-1 test2"));
     }
@@ -682,7 +682,7 @@ mod cli_handler_tests {
             )
             .params(String::from("param-1-name"), String::from("param-1-desc"))
             .params(String::from("param-2-name"), String::from("param-2-desc"))
-            .handler(|_| {})
+            .handler(|_, _| {})
             .build();
         cli_handler.handle(String::from("my-command param-1 param-2 param-3"));
     }
@@ -696,7 +696,7 @@ mod cli_handler_tests {
                 String::from("description"),
                 Logger::new("my-command", true),
             )
-            .handler(|_| {})
+            .handler(|_, _| {})
             .build();
         cli_handler.handle(String::from("my-command param-1"));
     }
@@ -712,7 +712,7 @@ mod cli_handler_tests {
             )
             .params(String::from("param-1-name"), String::from("param-1-desc"))
             .params(String::from("param-2-name"), String::from("param-2-desc"))
-            .handler(|_| {})
+            .handler(|_, _| {})
             .build();
         cli_handler.handle(String::from("my-command param-1"));
     }
@@ -740,7 +740,7 @@ mod cli_handler_tests {
             .params(String::from("params-1"), String::from("desc for params-1"))
             // It's hard to test the fact that the handler will be called.
             // TODO: That's a futur me assignment.
-            .handler(|parsed_command| {
+            .handler(|parsed_command, _| {
                 // Here we want to check that the correct parsed_command is passed to the handler.
                 // A more intense is done in the `parser_tests` module (see above)
                 assert_eq!(parsed_command.command_name, String::from("my-command"));

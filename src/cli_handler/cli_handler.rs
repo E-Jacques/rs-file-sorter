@@ -12,7 +12,7 @@ pub struct CliHandlerCommand {
     pub command_description: String,
     pub args: Vec<ArgBuilder>,
     pub params: Vec<ParamBuilder>,
-    pub handler: fn(&ParsedCommand) -> (),
+    pub handler: fn(&ParsedCommand, &Logger) -> (),
 }
 
 impl CliHandlerCommand {
@@ -90,7 +90,7 @@ impl CliHandler {
         }
 
         let command_handler_fn = command_handler.handler;
-        command_handler_fn(&parsed_command.clone())
+        command_handler_fn(&parsed_command.clone(), &command_handler.logger)
     }
 
     fn handle_help(&self, command: &Vec<String>) -> String {
@@ -264,13 +264,13 @@ mod cli_handler_help_tests {
                 vec![ArgValueTypes::Single],
             )
             .params(String::from("params-1"), String::from("desc for params-1"))
-            .handler(|_| ())
+            .handler(|_, _| ())
             .command(
                 String::from("command-2"),
                 String::from("command-2's description"),
                 Logger::new("my-command", true),
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .build();
 
         let help_output = cli_handler.handle_help(&vec![String::from("help")]);
@@ -298,13 +298,13 @@ mod cli_handler_help_tests {
                 vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
             )
             .params(String::from("params-1"), String::from("desc for params-1"))
-            .handler(|_| ())
+            .handler(|_, _| ())
             .command(
                 String::from("command-2"),
                 String::from("command-2's description"),
                 Logger::new("my-command", true),
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .build();
 
         let help_output =
@@ -334,13 +334,13 @@ mod cli_handler_help_tests {
                 vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
             )
             .params(String::from("params-1"), String::from("desc for params-1"))
-            .handler(|_| ())
+            .handler(|_, _| ())
             .command(
                 String::from("command-2"),
                 String::from("command-2's description"),
                 Logger::new("my-command", true),
             )
-            .handler(|_| ())
+            .handler(|_, _| ())
             .build();
 
         let _ =

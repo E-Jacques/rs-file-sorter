@@ -21,6 +21,19 @@ pub fn to_absolute_path(path: String) -> String {
     }
 }
 
+pub fn to_relative_path(path: String) -> String {
+    let current_directory = &env::current_dir().expect("[Sort Command] An internal error occured.");
+    let path_as_path = Path::new(&path);
+    if Path::is_relative(path_as_path) {
+        path
+    } else {
+        match path_as_path.strip_prefix(current_directory) {
+            Ok(relative_path) => relative_path.as_os_str().to_str().unwrap().to_string(),
+            Err(_) => path.clone(),
+        }
+    }
+}
+
 pub fn get_month_number(file: &File) -> Result<u32, io::Error> {
     // Get the metadata of the file
     let metadata = file.metadata()?;

@@ -27,7 +27,7 @@ pub struct CliHandlerBuilder {
     current_command: Option<CommandBuilder>,
     current_args: Option<Vec<ArgBuilder>>,
     current_params: Option<Vec<ParamBuilder>>,
-    current_handler: Option<fn(&ParsedCommand) -> ()>,
+    current_handler: Option<fn(&ParsedCommand, &Logger) -> ()>,
     commands: Vec<CliHandlerCommand>,
     logger: Logger,
 }
@@ -151,7 +151,7 @@ impl CliHandlerBuilder {
         self
     }
 
-    pub fn handler(mut self, handler: fn(&ParsedCommand) -> ()) -> Self {
+    pub fn handler(mut self, handler: fn(&ParsedCommand, &Logger) -> ()) -> Self {
         match self.current_handler {
             Some(_) => self
                 .logger
