@@ -4,7 +4,7 @@ pub mod tests_e2e_sort_command {
 
     use rs_file_sorter::handle;
     use rsft_utils::{
-        common::{clean_dir, file_or_dir_exists, generate_test_files},
+        common::{file_or_dir_exists, generate_test_files, clean_or_create_dir},
         file_creator::FileCreator,
     };
 
@@ -23,7 +23,7 @@ pub mod tests_e2e_sort_command {
             .join("sort")
             .join("test_1")
             .join("target_dir");
-        clean_dir(target_dir.clone())
+        clean_or_create_dir(target_dir.clone())
             .expect("Should be able to clean directory before running test.");
         generate_test_files(&target_dir, files).expect("Unable to generate the test files!");
 
@@ -83,12 +83,12 @@ pub mod tests_e2e_sort_command {
 
         // define input_dir
         let input_dir = common_dir.clone().join("input_dir");
-        clean_dir(input_dir.clone())
+        clean_or_create_dir(input_dir.clone())
             .expect("Should be able to clean directory before running test.");
 
         // define output dir
         let output_dir = common_dir.clone().join("output_dir");
-        clean_dir(output_dir.clone())
+        clean_or_create_dir(output_dir.clone())
             .expect("Should be able to clean directory before running test.");
 
         // generate files in input directory
@@ -141,15 +141,12 @@ pub mod tests_e2e_sort_command {
     #[test]
     #[should_panic = "[ERROR] [Sort Command] input directory 'tests/rsc/sort/test_unknown/input_dir' don't exists"]
     fn test_input_directory_dont_exists() {
+        // define input & output directory
         let common_dir = &Path::new("tests")
             .join("rsc")
             .join("sort")
             .join("test_unknown");
-
-        // define input_dir
         let input_dir = common_dir.clone().join("input_dir");
-
-        // define output dir
         let output_dir = common_dir.clone().join("output_dir");
 
         let final_input_dir = input_dir.clone().to_str().unwrap().to_string();
@@ -174,15 +171,14 @@ pub mod tests_e2e_sort_command {
             FileCreator::from("file_2023-10-20_9E387272"),
         ];
 
+        // define input & output directory
         let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_3");
-
-        // define input_dir
         let input_dir = common_dir.clone().join("input_dir");
-        clean_dir(input_dir.clone())
-            .expect("Should be able to clean directory before running test.");
-
-        // define output dir
         let output_dir = common_dir.clone().join("output_dir");
+
+        // clean up input directory
+        clean_or_create_dir(input_dir.clone())
+            .expect("Should be able to clean directory before running test.");
 
         // generate files in input directory
         generate_test_files(&input_dir, files).expect("Unable to generate the test files!");
@@ -202,16 +198,14 @@ pub mod tests_e2e_sort_command {
     #[test]
     #[should_panic = "[ERROR] [Sort Command] 'tests/rsc/sort/test_4/input_dir/file' isn't a directory"]
     fn test_input_isnt_a_directory() {
+        // define input & output directory
         let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_4");
-
-        // define input_dir
         let input_dir = common_dir.clone().join("input_dir").join("file");
-
-        // define output dir
         let output_dir = common_dir.clone().join("output_dir");
 
         let final_input_dir = input_dir.clone().to_str().unwrap().to_string();
         let final_output_dir = output_dir.clone().to_str().unwrap().to_string();
+
         handle(
             format!(
                 "sort --stack year --stack month {} {}",
@@ -232,18 +226,15 @@ pub mod tests_e2e_sort_command {
             FileCreator::from("file_2023-10-20_9E387272"),
         ];
 
+        // define input & output directory
         let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_5");
-
-        // define input_dir
         let input_dir = common_dir.clone().join("input_dir");
-        clean_dir(input_dir.clone())
+        let output_dir = common_dir.clone().join("output_dir").join("file");
+
+        clean_or_create_dir(input_dir.clone())
             .expect("Should be able to clean directory before running test.");
 
-        // generate files in input directory
         generate_test_files(&input_dir, files).expect("Unable to generate the test files!");
-
-        // define output dir
-        let output_dir = common_dir.clone().join("output_dir").join("file");
 
         let final_input_dir = input_dir.clone().to_str().unwrap().to_string();
         let final_output_dir = output_dir.clone().to_str().unwrap().to_string();
