@@ -225,7 +225,7 @@ dependencies = [
 [[package]]
 name = "rsft-utils"
 version = "0.1.0"
-source = "git+https://github.com/E-Jacques/rsft-utils#1144b1335e50d5b7ee7784610283f97b20cba0b6"
+source = "git+https://github.com/E-Jacques/rsft-utils#97e7d9a1a67a9df869227e97d71b5303856e73be"
 dependencies = [
  "chrono",
  "filetime",

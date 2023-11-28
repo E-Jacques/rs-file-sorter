@@ -4,7 +4,7 @@ pub mod tests_e2e_sort_command {
 
     use rs_file_sorter::handle;
     use rsft_utils::{
-        common::{file_or_dir_exists, generate_test_files, clean_or_create_dir},
+        common::{clean_or_create_dir, file_or_dir_exists, generate_test_files},
         file_creator::FileCreator,
     };
 
@@ -24,7 +24,7 @@ pub mod tests_e2e_sort_command {
             .join("test_1")
             .join("target_dir");
         clean_or_create_dir(target_dir.clone())
-            .expect("Should be able to clean directory before running test.");
+            .expect("Should be able to clean or create directory before running test");
         generate_test_files(&target_dir, files).expect("Unable to generate the test files!");
 
         let final_target_dir = target_dir.clone().to_str().unwrap().to_string();
@@ -84,12 +84,12 @@ pub mod tests_e2e_sort_command {
         // define input_dir
         let input_dir = common_dir.clone().join("input_dir");
         clean_or_create_dir(input_dir.clone())
-            .expect("Should be able to clean directory before running test.");
+            .expect("Should be able to clean or create directory before running test");
 
         // define output dir
         let output_dir = common_dir.clone().join("output_dir");
         clean_or_create_dir(output_dir.clone())
-            .expect("Should be able to clean directory before running test.");
+            .expect("Should be able to clean or create directory before running test");
 
         // generate files in input directory
         generate_test_files(&input_dir, files).expect("Unable to generate the test files!");
@@ -178,7 +178,7 @@ pub mod tests_e2e_sort_command {
 
         // clean up input directory
         clean_or_create_dir(input_dir.clone())
-            .expect("Should be able to clean directory before running test.");
+            .expect("Should be able to clean or create directory before running test");
 
         // generate files in input directory
         generate_test_files(&input_dir, files).expect("Unable to generate the test files!");
@@ -223,7 +223,7 @@ pub mod tests_e2e_sort_command {
         let files = vec![
             FileCreator::from("file_2022-02-22_F1BDD782"),
             FileCreator::from("file_2022-10-20_6FC02130"),
-            FileCreator::from("file_2023-10-20_9E387272"),
+            FileCreator::from("file_2023-10-20_9E387272"), 
         ];
 
         // define input & output directory
@@ -232,7 +232,7 @@ pub mod tests_e2e_sort_command {
         let output_dir = common_dir.clone().join("output_dir").join("file");
 
         clean_or_create_dir(input_dir.clone())
-            .expect("Should be able to clean directory before running test.");
+            .expect("Should be able to clean or create directory before running test");
 
         generate_test_files(&input_dir, files).expect("Unable to generate the test files!");
 
