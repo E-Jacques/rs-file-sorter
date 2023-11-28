@@ -203,6 +203,8 @@ pub mod tests_e2e_sort_command {
         let input_dir = common_dir.clone().join("input_dir").join("file");
         let output_dir = common_dir.clone().join("output_dir");
 
+        clean_or_create_dir(output_dir.clone()).expect("should be able to create output_dir");
+
         let final_input_dir = input_dir.clone().to_str().unwrap().to_string();
         let final_output_dir = output_dir.clone().to_str().unwrap().to_string();
 
