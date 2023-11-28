@@ -1,17 +1,10 @@
-mod common;
 
 #[cfg(test)]
 pub mod tests_e2e_exec_sort_command {
     use std::{fs, path::Path};
 
-    use rs_file_sorter::{
-        cli_handler::parser::{ArgValue, ParsedArgs},
-        commands::sort_command::exec_sort_command,
-    };
-
-    use crate::common::{
-        clean_dir, file_creator::FileCreator, file_or_dir_exists, generate_test_files,
-    };
+    use rs_file_sorter::handle;
+    use rsft_utils::{file_creator::FileCreator, common::{clean_dir, generate_test_files, file_or_dir_exists}};
 
     #[test]
     fn test_sort_to_same_file() {
@@ -30,13 +23,7 @@ pub mod tests_e2e_exec_sort_command {
         generate_test_files(&target_dir, files).expect("Unable to generate the test files!");
 
         let final_target_dir = target_dir.clone().to_str().unwrap().to_string();
-        exec_sort_command(
-            vec![ParsedArgs {
-                arg_name: String::from("stack"),
-                arg_value: ArgValue::Multiple(vec![String::from("year"), String::from("month")]),
-            }],
-            vec![final_target_dir.clone(), final_target_dir.clone()],
-        );
+        handle(format!("sort --stack year --stack month {}, {}", final_target_dir.clone(), final_target_dir.clone()));
 
         let content_of_target_dir = fs::read_dir(target_dir.clone()).unwrap();
         assert_eq!(content_of_target_dir.count(), 2);

@@ -1,6 +1,8 @@
 mod file_manipulator_tests {
     use std::{env, fs::File};
 
+    use rsft_utils::{common::generate_test_files, file_creator::FileCreator};
+
     use crate::utils::file_manipulator::get_year_number;
 
     mod to_absolute_path {
@@ -29,20 +31,26 @@ mod file_manipulator_tests {
         }
     }
 
-    mod get_month_number {
+    mod get_month_number_test {
         use std::{env, fs::File};
+
+        use rsft_utils::{common::generate_test_files, file_creator::FileCreator};
 
         use crate::utils::file_manipulator::get_month_number;
 
         #[test]
         fn test_january() {
             let filename = "file_2021-01-08_F71C2883";
-            let full_path = env::current_dir()
+            let target_dir = env::current_dir()
                 .unwrap()
                 .join("tests")
                 .join("rsc")
-                .join("files")
-                .join(filename);
+                .join("files");
+            let full_path = target_dir.clone().join(filename.clone());
+
+            let file_creator = FileCreator::from(filename);
+            generate_test_files(&target_dir, vec![file_creator])
+                .expect("Should be able to generate tests files");
 
             let file = File::open(full_path).expect("Should be able to access file, please check that 'tests/rsc/files/file_2021-01-08_F71C2883' is present");
             let month_number =
@@ -54,12 +62,16 @@ mod file_manipulator_tests {
         #[test]
         fn test_december() {
             let filename = "file_2021-12-06_F4E4926F";
-            let full_path = env::current_dir()
+            let target_dir = env::current_dir()
                 .unwrap()
                 .join("tests")
                 .join("rsc")
-                .join("files")
-                .join(filename);
+                .join("files");
+            let full_path = target_dir.clone().join(filename.clone());
+
+            let file_creator = FileCreator::from(filename);
+            generate_test_files(&target_dir, vec![file_creator])
+                .expect("Should be able to generate tests files");
 
             let file = File::open(full_path).expect("Should be able to access file, please check that 'tests/rsc/files/file_2021-12-06_F4E4926F' is present");
             let month_number =
@@ -72,12 +84,17 @@ mod file_manipulator_tests {
     #[test]
     fn test_get_year_number() {
         let filename = "file_2018-11-06_14835535";
-        let full_path = env::current_dir()
+        let target_dir = env::current_dir()
             .unwrap()
             .join("tests")
             .join("rsc")
-            .join("files")
-            .join(filename);
+            .join("files");
+
+        let full_path = target_dir.clone().join(filename);
+
+        let file_creator = FileCreator::from(filename);
+        generate_test_files(&target_dir, vec![file_creator])
+            .expect("Should be able to generate tests files");
 
         let file = File::open(full_path).expect("Should be able to access file, please check that 'tests/rsc/files/file_2018-11-06_14835535' is present");
         let year_number = get_year_number(&file).expect("Should be able to extract year number");

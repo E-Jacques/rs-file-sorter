@@ -219,6 +219,17 @@ dependencies = [
  "chrono",
  "filetime",
  "regex",
+ "rsft-utils",
+]
+
+[[package]]
+name = "rsft-utils"
+version = "0.1.0"
+source = "git+https://github.com/E-Jacques/rsft-utils#dbfa184acd185d980b148a9f538fba0c19034247"
+dependencies = [
+ "chrono",
+ "filetime",
+ "regex",
 ]
 
 [[package]]
