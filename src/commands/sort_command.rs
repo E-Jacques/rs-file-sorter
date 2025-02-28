@@ -4,7 +4,7 @@ use rsft_utils::common::file_or_dir_exists;
 
 use crate::{
     cli_handler::parser::{ArgValue, ParsedArgs},
-    sortering_strategies::{
+    sorting_strategies::{
         sorter, sorting_strategy::SortingStrategy,
         sorting_strategy_list::get_storting_strategies_list,
     },

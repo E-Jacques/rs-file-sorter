@@ -1,5 +1,5 @@
 use crate::{
-    sortering_strategies::sorting_strategy::SortingStrategy, utils::{file_manipulator::move_file, logger::Logger},
+    sorting_strategies::sorting_strategy::SortingStrategy, utils::{file_manipulator::move_file, logger::Logger},
 };
 use std::{
     fs::{read_dir, File},
