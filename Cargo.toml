@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 chrono = "0.4.31"
 filetime = "0.2.22"
+iced = "0.13.1"
 regex = "1.10.2"
 rsft-utils = { git = "https://github.com/E-Jacques/rsft-utils" }
