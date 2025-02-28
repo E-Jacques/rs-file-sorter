@@ -1,4 +1,4 @@
-use crate::sortering_strategies::{
+use crate::sorting_strategies::{
     month_sorting_strategy::get_month_sorting_strategy,
     year_sorting_strategy::get_year_sorting_strategy,
 };
