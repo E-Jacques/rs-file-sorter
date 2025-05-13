@@ -241,7 +241,7 @@ impl CliHandler {
 #[cfg(test)]
 mod cli_handler_help_tests {
     use crate::{
-        cli_handler::cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
+        cli::cli_handler::cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
         utils::logger::Logger,
     };
 
