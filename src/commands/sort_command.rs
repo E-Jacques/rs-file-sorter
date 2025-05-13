@@ -5,10 +5,7 @@ use rsft_utils::common::file_or_dir_exists;
 use crate::{
     cli_handler::parser::{ArgValue, ParsedArgs},
     core::{sorter::sorter, sorting_strategy::SortingStrategy},
-    sorting_strategies::{
-        month_sorting_strategy::get_month_sorting_strategy,
-        year_sorting_strategy::get_year_sorting_strategy,
-    },
+    sorting_strategies::{MONTH_SORTING_STRATEGY, YEAR_SORTING_STRATEGY},
     utils::{
         file_manipulator::{to_absolute_path, to_relative_path},
         logger::Logger,
@@ -55,7 +52,7 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
         ))
     }
 
-    let sorting_strategies_list = vec![get_month_sorting_strategy(), get_year_sorting_strategy()];
+    let sorting_strategies_list = vec![MONTH_SORTING_STRATEGY, YEAR_SORTING_STRATEGY];
 
     let stack_arg_name = String::from("stack");
     let default_stack_parsed_args = ParsedArgs {
@@ -103,18 +100,18 @@ fn get_storting_strategies<'a>(
     stacks: Vec<String>,
     sorting_strategies_list: &'a Vec<SortingStrategy>,
     logger: &'a Logger,
-) -> Vec<&'a SortingStrategy> {
+) -> Vec<&'a SortingStrategy<'a>> {
     let all_sorting_strategies_string = sorting_strategies_list
         .into_iter()
-        .map(|v| v.name.clone())
-        .collect::<Vec<String>>()
+        .map(|v| v.name)
+        .collect::<Vec<&'a str>>()
         .join(", ");
     let sorting_strategies = stacks
         .into_iter()
         .map(|stack| {
             match sorting_strategies_list
                 .into_iter()
-                .find(|value| value.name.clone() == stack)
+                .find(|value| value.name == stack)
             {
                 Some(output) => output,
                 None => {

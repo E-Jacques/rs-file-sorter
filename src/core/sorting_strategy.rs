@@ -2,17 +2,17 @@ use std::fs::File;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
-pub struct SortingStrategy {
+pub struct SortingStrategy<'a> {
     pub action: fn(&File) -> String,
-    pub name: String,
+    pub name: &'a str,
 }
 
-impl SortingStrategy {
-    pub fn new (name: String, action: fn(&File) -> String) -> SortingStrategy {
+impl<'a> SortingStrategy<'a> {
+    pub fn new(name: &str, action: fn(&File) -> String) -> SortingStrategy {
         SortingStrategy { action, name }
     }
 
-    pub fn apply (&self, file: &File) -> String {
+    pub fn apply(&self, file: &File) -> String {
         println!("{:#?}", file);
         let file_mutex = Arc::new(Mutex::new(file));
         let file_clone = Arc::clone(&file_mutex);
