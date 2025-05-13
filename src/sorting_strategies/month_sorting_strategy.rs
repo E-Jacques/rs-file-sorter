@@ -1,10 +1,9 @@
 use std::fs::File;
 
-use crate::utils::{
-    file_manipulator::get_month_number, string_manipulator::add_0_to_single_number,
+use crate::{
+    core::sorting_strategy::SortingStrategy,
+    utils::{file_manipulator::get_month_number, string_manipulator::add_0_to_single_number},
 };
-
-use super::sorting_strategy::SortingStrategy;
 
 pub fn get_month_sorting_strategy() -> SortingStrategy {
     SortingStrategy {
