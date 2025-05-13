@@ -46,7 +46,7 @@ mod file_manipulator_tests {
                 .join("tests")
                 .join("rsc")
                 .join("files");
-            let full_path = target_dir.clone().join(filename.clone());
+            let full_path = target_dir.clone().join(filename);
 
             let file_creator = FileCreator::from(filename);
             generate_test_files(&target_dir, vec![file_creator])
@@ -67,7 +67,7 @@ mod file_manipulator_tests {
                 .join("tests")
                 .join("rsc")
                 .join("files");
-            let full_path = target_dir.clone().join(filename.clone());
+            let full_path = target_dir.clone().join(filename);
 
             let file_creator = FileCreator::from(filename);
             generate_test_files(&target_dir, vec![file_creator])
