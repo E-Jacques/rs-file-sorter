@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod parser_tests {
-    use crate::cli_handler::parser::{parse_cli, ArgValue};
+    use crate::cli::cli_handler::parser::{parse_cli, ArgValue};
 
     #[test]
     #[should_panic(expected = "[Cli Parser] Expect to receive non-empty command input.")]
@@ -198,7 +198,7 @@ mod parser_tests {
 #[cfg(test)]
 mod cli_handler_builder_tests {
     use crate::{
-        cli_handler::cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
+        cli::cli_handler::cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
         utils::logger::Logger,
     };
 
@@ -555,7 +555,7 @@ mod cli_handler_builder_tests {
 #[cfg(test)]
 mod cli_handler_tests {
     use crate::{
-        cli_handler::{
+        cli::cli_handler::{
             cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
             parser::ArgValue,
         },

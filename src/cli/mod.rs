@@ -1,10 +1,9 @@
+use cli_handler::cli_handler_builder::{ArgValueTypes, CliHandlerBuilder};
 use sort_command::exec_sort_command;
 
-use crate::{
-    cli_handler::cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
-    utils::logger::Logger,
-};
+use crate::utils::logger::Logger;
 
+mod cli_handler;
 pub mod sort_command;
 
 /**

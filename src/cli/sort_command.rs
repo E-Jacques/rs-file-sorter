@@ -3,7 +3,6 @@ use std::fs::metadata;
 use rsft_utils::common::file_or_dir_exists;
 
 use crate::{
-    cli_handler::parser::{ArgValue, ParsedArgs},
     core::{sorter::sorter, sorting_strategy::SortingStrategy},
     sorting_strategies::{MONTH_SORTING_STRATEGY, YEAR_SORTING_STRATEGY},
     utils::{
@@ -11,6 +10,8 @@ use crate::{
         logger::Logger,
     },
 };
+
+use super::cli_handler::parser::{ArgValue, ParsedArgs};
 
 pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Logger) {
     if params.len() != 2 {
