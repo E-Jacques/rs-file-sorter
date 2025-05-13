@@ -3,6 +3,15 @@ name = "rs-file-sorter"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "rsfs-cli"
+path = "src/bin/rsfs_cli.rs"
+
+[[bin]]
+name = "rsfs-app"
+path = "src/bin/rsfs_app.rs"
+
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
