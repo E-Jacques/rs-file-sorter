@@ -2,7 +2,7 @@
 pub mod tests_e2e_sort_command {
     use std::{fs, path::Path};
 
-    use rs_file_sorter::handle;
+    use rs_file_sorter::cli::handle;
     use rsft_utils::{
         common::{clean_or_create_dir, file_or_dir_exists, generate_test_files},
         file_creator::FileCreator,
@@ -225,7 +225,7 @@ pub mod tests_e2e_sort_command {
         let files = vec![
             FileCreator::from("file_2022-02-22_F1BDD782"),
             FileCreator::from("file_2022-10-20_6FC02130"),
-            FileCreator::from("file_2023-10-20_9E387272"), 
+            FileCreator::from("file_2023-10-20_9E387272"),
         ];
 
         // define input & output directory
