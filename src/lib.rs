@@ -4,6 +4,7 @@ use utils::logger::Logger;
 
 pub mod cli_handler;
 pub mod commands;
+pub mod core;
 pub mod sorting_strategies;
 pub mod utils;
 

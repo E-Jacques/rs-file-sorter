@@ -1,8 +1,6 @@
 use std::fs::File;
 
-use crate::utils::file_manipulator::get_year_number;
-
-use super::sorting_strategy::SortingStrategy;
+use crate::{core::sorting_strategy::SortingStrategy, utils::file_manipulator::get_year_number};
 
 pub fn get_year_sorting_strategy() -> SortingStrategy {
     SortingStrategy {

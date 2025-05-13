@@ -1,10 +1,11 @@
-use crate::{
-    sorting_strategies::sorting_strategy::SortingStrategy, utils::{file_manipulator::move_file, logger::Logger},
-};
 use std::{
     fs::{read_dir, File},
     path::{Path, PathBuf},
 };
+
+use crate::utils::{file_manipulator::move_file, logger::Logger};
+
+use super::sorting_strategy::SortingStrategy;
 
 /// Need to be absolute
 pub fn sorter<'a>(
@@ -14,8 +15,10 @@ pub fn sorter<'a>(
     logger: Logger,
     mut rename_error_handler: impl FnMut(&str, &str) -> (),
 ) {
-    logger.debug(&format!("sorter have been called with input_dir={input_dir} & output_dir={output_dir}."));
-    
+    logger.debug(&format!(
+        "sorter have been called with input_dir={input_dir} & output_dir={output_dir}."
+    ));
+
     let files_list = read_dir(input_dir).unwrap();
     files_list.for_each(|f| {
         let file_name = f.unwrap().file_name();
