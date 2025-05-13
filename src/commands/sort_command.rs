@@ -5,7 +5,10 @@ use rsft_utils::common::file_or_dir_exists;
 use crate::{
     cli_handler::parser::{ArgValue, ParsedArgs},
     core::{sorter::sorter, sorting_strategy::SortingStrategy},
-    sorting_strategies::sorting_strategy_list::get_storting_strategies_list,
+    sorting_strategies::{
+        month_sorting_strategy::get_month_sorting_strategy,
+        year_sorting_strategy::get_year_sorting_strategy,
+    },
     utils::{
         file_manipulator::{to_absolute_path, to_relative_path},
         logger::Logger,
@@ -52,7 +55,7 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
         ))
     }
 
-    let sorting_strategies_list = &get_storting_strategies_list();
+    let sorting_strategies_list = vec![get_month_sorting_strategy(), get_year_sorting_strategy()];
 
     let stack_arg_name = String::from("stack");
     let default_stack_parsed_args = ParsedArgs {
@@ -77,7 +80,7 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
         ArgValue::Single(stack) => vec![stack],
     };
 
-    let sorting_strategies = get_storting_strategies(stacks, sorting_strategies_list, &logger);
+    let sorting_strategies = get_storting_strategies(stacks, &sorting_strategies_list, &logger);
 
     let logger_borrowed = &logger.clone();
     let rename_error_handler = |old_filename: &_, new_filename: &_| {
