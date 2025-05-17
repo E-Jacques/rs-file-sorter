@@ -259,6 +259,22 @@ mod string_manipulator_tests {
             assert_eq!(value, String::from("100"));
         }
     }
+
+    mod random_string {
+        use crate::utils::string_manipulator::random_string;
+
+        #[test]
+        fn test_random_string() {
+            let value = random_string(10);
+            assert_eq!(value.len(), 10);
+        }
+
+        #[test]
+        fn test_random_string_0_length() {
+            let value = random_string(0);
+            assert_eq!(value.len(), 0);
+        }
+    }
 }
 
 mod time_manipulator_tests {
