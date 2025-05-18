@@ -20,4 +20,5 @@ filetime = "0.2.22"
 iced = "0.13.1"
 rand = "0.9.1"
 regex = "1.10.2"
+rfd = "0.15.3"
 rsft-utils = { git = "https://github.com/E-Jacques/rsft-utils" }
