@@ -10,6 +10,8 @@ use crate::{
     utils::string_manipulator::random_string,
 };
 
+use super::icon::{self, icon};
+
 const STRATEGIES_LIST: &[SortingStrategy<'static>] =
     &[MONTH_SORTING_STRATEGY, YEAR_SORTING_STRATEGY];
 
@@ -76,16 +78,16 @@ impl EditableFileTree {
             .iter()
             .map(|dir: &Directory| -> Element<'_, Message> {
                 let dir_id = dir.id.clone();
-                let delete_btn: Element<'_, Message> = button("delete")
+                let delete_btn: Element<'_, Message> = button(icon(icon::DELETE))
                     .on_press(Message::DirectoryRemoved(dir_id.clone()))
                     .into();
-                let up_btn: Element<'_, Message> = button("up")
+                let up_btn: Element<'_, Message> = button(icon(icon::ARROW_UP))
                     .on_press(Message::MoveDirectory(
                         dir_id.clone(),
                         DirectoryMovement::Up,
                     ))
                     .into();
-                let down_btn: Element<'_, Message> = button("down")
+                let down_btn: Element<'_, Message> = button(icon(icon::ARROW_DOWN))
                     .on_press(Message::MoveDirectory(
                         dir_id.clone(),
                         DirectoryMovement::Down,
