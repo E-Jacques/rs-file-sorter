@@ -1,6 +1,6 @@
 use iced::{
     border::Radius,
-    widget::{button, column, container, row, text_input},
+    widget::{button, column, combo_box, container, row, text_input},
     Border, Color, Element, Length,
 };
 
@@ -18,6 +18,7 @@ const STRATEGIES_LIST: &[SortingStrategy<'static>] =
 #[derive(Debug, Clone)]
 pub struct EditableFileTree {
     directories: Vec<Directory>,
+    strategies_options: combo_box::State<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -51,6 +52,12 @@ impl EditableFileTree {
     fn new() -> Self {
         EditableFileTree {
             directories: vec![],
+            strategies_options: combo_box::State::new(
+                STRATEGIES_LIST
+                    .iter()
+                    .map(|s| String::from(s.name))
+                    .collect::<Vec<String>>(),
+            ),
         }
     }
 
@@ -94,8 +101,18 @@ impl EditableFileTree {
                     ))
                     .into();
 
-                let strategy_name_input = text_input("Strategy", &dir.name.as_str())
-                    .on_input(move |new_name| Message::StrategyChanged(dir_id.clone(), new_name));
+                let strategy_name_input = combo_box(
+                    &self.strategies_options,
+                    "Select a strategy",
+                    match dir.strategy {
+                        Some(strategy) => Some(String::from(strategy.name)),
+                        None => None,
+                    }
+                    .as_ref(),
+                    move |selected_strategy| {
+                        Message::StrategyChanged(dir_id.clone(), selected_strategy)
+                    },
+                );
 
                 row![strategy_name_input, delete_btn, up_btn, down_btn]
                     .spacing(10)
