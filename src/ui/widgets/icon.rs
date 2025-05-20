@@ -9,8 +9,12 @@ pub const DELETE: &str = "\u{E800}";
 pub const ARROW_UP: &str = "\u{E801}";
 pub const ARROW_DOWN: &str = "\u{E802}";
 pub const FOLDER_CLOSED: &str = "\u{E803}";
+
+#[allow(dead_code)]
 pub const FOLDER_OPENED: &str = "\u{E804}";
+#[allow(dead_code)]
 pub const LOADER: &str = "\u{E805}";
+#[allow(dead_code)]
 pub const GITHUB: &str = "\u{E806}";
 
 pub fn icon(code: &str) -> Text<'_> {
