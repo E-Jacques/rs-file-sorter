@@ -1,6 +1,6 @@
 use iced::{
     border::Radius,
-    widget::{button, column, combo_box, container, row, text_input},
+    widget::{button, column, combo_box, container, row},
     Border, Color, Element, Length,
 };
 
