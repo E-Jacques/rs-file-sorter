@@ -1,40 +1,56 @@
 use iced::{
-    widget::{button, column, container, row, text_input},
+    widget::{button, column, container},
     Element, Length,
 };
-use rfd::FileDialog;
 
 use crate::{
     core::{sorter, sorting_strategy::SortingStrategy},
     utils::logger::Logger,
 };
 
-use super::widgets::{editable_file_tree, icon};
+use super::widgets::{directory_input, editable_file_tree};
 
-#[derive(Default)]
 pub struct FileSorterApp<'a> {
     input_path: String,
     output_path: String,
     sorting_strategies: Vec<&'a SortingStrategy<'a>>,
     editable_file_tree: editable_file_tree::EditableFileTree,
-}
-
-#[derive(Debug, Clone)]
-pub enum PathType {
-    Input,
-    Output,
+    directory_input: directory_input::DirectoryInput,
+    directory_output: directory_input::DirectoryInput,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    InputPathChanged(String),
-    OutputPathChanged(String),
-    OpenDirectorySelector(PathType),
+    InputPathChanged(directory_input::DirectoryInputMessage),
+    OutputPathChanged(directory_input::DirectoryInputMessage),
     EditableFileTreeMessage(editable_file_tree::Message),
     Sort,
 }
 
+impl Default for FileSorterApp<'_> {
+    fn default() -> Self {
+        FileSorterApp::new()
+    }
+}
+
 impl<'a> FileSorterApp<'a> {
+    pub fn new() -> Self {
+        FileSorterApp {
+            input_path: String::new(),
+            output_path: String::new(),
+            sorting_strategies: vec![],
+            editable_file_tree: editable_file_tree::EditableFileTree::default(),
+            directory_input: directory_input::DirectoryInput::new(
+                None,
+                Some(String::from("Input path")),
+            ),
+            directory_output: directory_input::DirectoryInput::new(
+                None,
+                Some(String::from("Output path")),
+            ),
+        }
+    }
+
     fn sort(&self) {
         sorter::sorter(
             &self.input_path,
@@ -48,18 +64,15 @@ impl<'a> FileSorterApp<'a> {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        let input_path = row![
-            text_input("Input to sort", &self.input_path).on_input(Message::InputPathChanged),
-            button(icon::icon(icon::FOLDER_CLOSED))
-                .on_press(Message::OpenDirectorySelector(PathType::Input))
-        ]
-        .spacing(8);
-        let output_path = row![
-            text_input("Output path", &self.output_path).on_input(Message::OutputPathChanged),
-            button(icon::icon(icon::FOLDER_CLOSED))
-                .on_press(Message::OpenDirectorySelector(PathType::Output))
-        ]
-        .spacing(8);
+        let input_path = self
+            .directory_input
+            .view()
+            .map(move |msg| Message::InputPathChanged(msg));
+
+        let output_path = self
+            .directory_output
+            .view()
+            .map(move |msg| Message::OutputPathChanged(msg));
 
         let output_path_tree = self
             .editable_file_tree
@@ -83,29 +96,25 @@ impl<'a> FileSorterApp<'a> {
             Message::Sort => {
                 self.sort();
             }
-            Message::InputPathChanged(path) => {
-                self.input_path = path;
+            Message::InputPathChanged(message) => {
+                match self.directory_input.update(message.clone()) {
+                    directory_input::DirectoryInputEvent::SelectPath(path) => {
+                        self.input_path = path;
+                    }
+                    directory_input::DirectoryInputEvent::FailSelectPath => {}
+                }
             }
-            Message::OutputPathChanged(path) => {
-                self.output_path = path;
+            Message::OutputPathChanged(message) => {
+                match self.directory_output.update(message.clone()) {
+                    directory_input::DirectoryInputEvent::SelectPath(path) => {
+                        self.output_path = path;
+                    }
+                    directory_input::DirectoryInputEvent::FailSelectPath => {}
+                }
             }
             Message::EditableFileTreeMessage(m) => {
                 self.editable_file_tree.update(m);
                 self.sorting_strategies = self.editable_file_tree.get_sorting_strategies();
-            }
-            Message::OpenDirectorySelector(path_type) => {
-                let files = FileDialog::new().set_directory("/").pick_folder();
-                if let Some(path) = files {
-                    let path = String::from(path.to_str().unwrap());
-                    match path_type {
-                        PathType::Input => {
-                            self.input_path = path;
-                        }
-                        PathType::Output => {
-                            self.output_path = path;
-                        }
-                    }
-                }
             }
         }
     }
