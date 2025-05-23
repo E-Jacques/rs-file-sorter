@@ -11,7 +11,7 @@ use super::sorting_strategy::SortingStrategy;
 pub fn sorter<'a>(
     input_dir: &str,
     output_dir: &str,
-    sorting_strategies: Vec<&SortingStrategy>,
+    sorting_strategies: Vec<SortingStrategy>,
     logger: Logger,
     mut rename_error_handler: impl FnMut(&str, &str) -> (),
 ) {

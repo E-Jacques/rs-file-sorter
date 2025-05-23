@@ -10,10 +10,10 @@ use crate::{
 
 use super::widgets::{directory_input, editable_file_tree};
 
-pub struct FileSorterApp<'a> {
+pub struct FileSorterApp {
     input_path: String,
     output_path: String,
-    sorting_strategies: Vec<&'a SortingStrategy<'a>>,
+    sorting_strategies: Vec<SortingStrategy>,
     editable_file_tree: editable_file_tree::EditableFileTree,
     directory_input: directory_input::DirectoryInput,
     directory_output: directory_input::DirectoryInput,
@@ -27,13 +27,13 @@ pub enum Message {
     Sort,
 }
 
-impl Default for FileSorterApp<'_> {
+impl Default for FileSorterApp {
     fn default() -> Self {
         FileSorterApp::new()
     }
 }
 
-impl<'a> FileSorterApp<'a> {
+impl FileSorterApp {
     pub fn new() -> Self {
         FileSorterApp {
             input_path: String::new(),
@@ -114,7 +114,8 @@ impl<'a> FileSorterApp<'a> {
             }
             Message::EditableFileTreeMessage(m) => {
                 self.editable_file_tree.update(m);
-                self.sorting_strategies = self.editable_file_tree.get_sorting_strategies();
+                let strategies = self.editable_file_tree.get_sorting_strategies();
+                self.sorting_strategies = strategies;
             }
         }
     }
