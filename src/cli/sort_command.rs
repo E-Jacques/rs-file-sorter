@@ -4,7 +4,7 @@ use rsft_utils::common::file_or_dir_exists;
 
 use crate::{
     core::{sorter::sorter, sorting_strategy::SortingStrategy},
-    sorting_strategies::{MONTH_SORTING_STRATEGY, YEAR_SORTING_STRATEGY},
+    sorting_strategies::{get_month_sorting_strategy, get_year_sorting_strategy},
     utils::{
         file_manipulator::{to_absolute_path, to_relative_path},
         logger::Logger,
@@ -53,7 +53,7 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
         ))
     }
 
-    let sorting_strategies_list = vec![MONTH_SORTING_STRATEGY, YEAR_SORTING_STRATEGY];
+    let sorting_strategies_list = vec![get_month_sorting_strategy(), get_year_sorting_strategy()];
 
     let stack_arg_name = String::from("stack");
     let default_stack_parsed_args = ParsedArgs {
@@ -78,7 +78,7 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
         ArgValue::Single(stack) => vec![stack],
     };
 
-    let sorting_strategies = get_storting_strategies(stacks, &sorting_strategies_list, &logger);
+    let sorting_strategies = get_storting_strategies(stacks, sorting_strategies_list, &logger);
 
     let logger_borrowed = &logger.clone();
     let rename_error_handler = |old_filename: &_, new_filename: &_| {
@@ -97,24 +97,24 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
     )
 }
 
-fn get_storting_strategies<'a>(
+fn get_storting_strategies(
     stacks: Vec<String>,
-    sorting_strategies_list: &'a Vec<SortingStrategy>,
-    logger: &'a Logger,
-) -> Vec<&'a SortingStrategy<'a>> {
+    sorting_strategies_list: Vec<SortingStrategy>,
+    logger: &Logger,
+) -> Vec<SortingStrategy> {
     let all_sorting_strategies_string = sorting_strategies_list
-        .into_iter()
-        .map(|v| v.name)
-        .collect::<Vec<&'a str>>()
+        .iter()
+        .map(|v| v.name.clone())
+        .collect::<Vec<String>>()
         .join(", ");
     let sorting_strategies = stacks
         .into_iter()
         .map(|stack| {
             match sorting_strategies_list
-                .into_iter()
+                .iter()
                 .find(|value| value.name == stack)
             {
-                Some(output) => output,
+                Some(output) => output.clone(),
                 None => {
                     logger.error(&format!(
                         "unexpected stack value. Got {}, expected {}.",

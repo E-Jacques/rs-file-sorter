@@ -6,26 +6,24 @@ use iced::{
 
 use crate::{
     core::sorting_strategy::SortingStrategy,
-    sorting_strategies::{MONTH_SORTING_STRATEGY, YEAR_SORTING_STRATEGY},
+    sorting_strategies::{get_month_sorting_strategy, get_year_sorting_strategy},
     utils::string_manipulator::random_string,
 };
 
 use super::icon::{self, icon};
 
-const STRATEGIES_LIST: &[SortingStrategy<'static>] =
-    &[MONTH_SORTING_STRATEGY, YEAR_SORTING_STRATEGY];
-
 #[derive(Debug, Clone)]
 pub struct EditableFileTree {
     directories: Vec<Directory>,
     strategies_options: combo_box::State<String>,
+    strategies_list: Vec<SortingStrategy>,
 }
 
 #[derive(Debug, Clone)]
 struct Directory {
     id: String,
     name: String,
-    strategy: Option<&'static SortingStrategy<'static>>,
+    strategy: Option<SortingStrategy>,
 }
 
 #[derive(Debug, Clone)]
@@ -50,14 +48,17 @@ impl Default for EditableFileTree {
 
 impl EditableFileTree {
     fn new() -> Self {
+        let strategy_list: Vec<SortingStrategy> =
+            vec![get_month_sorting_strategy(), get_year_sorting_strategy()];
         EditableFileTree {
             directories: vec![],
             strategies_options: combo_box::State::new(
-                STRATEGIES_LIST
+                strategy_list
                     .iter()
-                    .map(|s| String::from(s.name))
+                    .map(|s| s.name.clone())
                     .collect::<Vec<String>>(),
             ),
+            strategies_list: strategy_list,
         }
     }
 
@@ -101,14 +102,12 @@ impl EditableFileTree {
                     ))
                     .into();
 
+                let selected_strategy_name: Option<String> =
+                    dir.strategy.as_ref().map(|s| s.name.clone());
                 let strategy_name_input = combo_box(
                     &self.strategies_options,
                     "Select a strategy",
-                    match dir.strategy {
-                        Some(strategy) => Some(String::from(strategy.name)),
-                        None => None,
-                    }
-                    .as_ref(),
+                    selected_strategy_name.as_ref(),
                     move |selected_strategy| {
                         Message::StrategyChanged(dir_id.clone(), selected_strategy)
                     },
@@ -158,8 +157,8 @@ impl EditableFileTree {
     fn change_directory_name(&mut self, id: String, name: String) {
         if let Some(dir) = self.directories.iter_mut().find(|dir| dir.id == id) {
             dir.name = name.clone();
-            if let Some(strategy) = STRATEGIES_LIST.iter().find(|s| s.name == name) {
-                dir.strategy = Some(strategy);
+            if let Some(strategy) = self.strategies_list.iter().find(|s| s.name == name) {
+                dir.strategy = Some(strategy.clone());
             } else {
                 println!("Strategy already set for directory {}", dir.id);
             }
@@ -186,10 +185,10 @@ impl EditableFileTree {
         }
     }
 
-    pub fn get_sorting_strategies<'a>(&self) -> Vec<&'a SortingStrategy<'a>> {
+    pub fn get_sorting_strategies(&self) -> Vec<SortingStrategy> {
         self.directories
             .iter()
-            .filter_map(|dir| dir.strategy)
+            .filter_map(|dir| dir.strategy.clone())
             .collect()
     }
 }
