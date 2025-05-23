@@ -1,18 +1,31 @@
 use std::fs::File;
 use std::sync::{Arc, Mutex};
 
-#[derive(Debug)]
-pub struct SortingStrategy<'a> {
-    pub action: fn(&File) -> String,
-    pub name: &'a str,
+type SortingStrategyAction = Box<dyn Fn(&File) -> String>;
+
+#[derive(Clone)]
+pub struct SortingStrategy {
+    pub action: Arc<SortingStrategyAction>,
+    pub name: String,
 }
 
-impl<'a> SortingStrategy<'a> {
-    pub fn new(name: &str, action: fn(&File) -> String) -> SortingStrategy {
-        SortingStrategy { action, name }
+impl std::fmt::Debug for SortingStrategy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SortingStrategy")
+            .field("name", &self.name)
+            .finish()
+    }
+}
+
+impl SortingStrategy {
+    pub fn new(name: &str, action: SortingStrategyAction) -> SortingStrategy {
+        SortingStrategy {
+            action: Arc::new(action),
+            name: name.to_string(),
+        }
     }
 
-    pub fn apply(&self, file: &File) -> String {
+    pub(crate) fn apply(&self, file: &File) -> String {
         println!("{:#?}", file);
         let file_mutex = Arc::new(Mutex::new(file));
         let file_clone = Arc::clone(&file_mutex);
