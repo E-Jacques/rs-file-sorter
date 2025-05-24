@@ -1,4 +1,4 @@
-use std::{fs::File, sync::Arc};
+use std::fs::File;
 
 use crate::{
     core::sorting_strategy::SortingStrategy,
@@ -11,9 +11,9 @@ use crate::{
 pub mod concat_strategy;
 
 pub fn get_month_sorting_strategy() -> SortingStrategy {
-    SortingStrategy {
-        name: String::from("month"),
-        action: Arc::new(Box::new(|f: &File| match get_month_number(f) {
+    SortingStrategy::new(
+        "month",
+        Box::new(|f: &File| match get_month_number(f) {
             Ok(month_number) => {
                 let french_month_name = vec![
                     "Janvier",
@@ -40,16 +40,16 @@ pub fn get_month_sorting_strategy() -> SortingStrategy {
                 )
             }
             Err(error) => panic!("{}", format!("Cannot retrieve month number: {:#?}", error)),
-        })),
-    }
+        }),
+    )
 }
 
 pub fn get_year_sorting_strategy() -> SortingStrategy {
-    SortingStrategy {
-        name: String::from("year"),
-        action: Arc::new(Box::new(|f: &File| match get_year_number(f) {
+    SortingStrategy::new(
+        "year",
+        Box::new(|f: &File| match get_year_number(f) {
             Ok(year_number) => year_number.to_string(),
             Err(error) => panic!("{}", format!("Cannot retrieve year number: {:#?}", error)),
-        })),
-    }
+        }),
+    )
 }
