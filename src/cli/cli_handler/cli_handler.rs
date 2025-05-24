@@ -39,7 +39,7 @@ impl CliHandlerCommand {
                 .collect::<Vec<String>>()
                 .join(", ");
             help_output.push_str(&format!(
-                "\t--{}: {}. Accepted values: {}\n",
+                "\t--{}: {} Accepted values: {}\n",
                 arg.name, arg.description, expected_value_types_string
             ));
         }
