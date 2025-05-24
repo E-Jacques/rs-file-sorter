@@ -289,12 +289,12 @@ mod cli_handler_help_tests {
             )
             .args(
                 String::from("arg-1"),
-                String::from("desc for arg-1"),
+                String::from("desc for arg-1."),
                 vec![ArgValueTypes::NoValue],
             )
             .args(
                 String::from("arg-2"),
-                String::from("desc for arg-2"),
+                String::from("desc for arg-2."),
                 vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
             )
             .params(String::from("params-1"), String::from("desc for params-1"))
