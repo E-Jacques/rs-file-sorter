@@ -54,100 +54,129 @@ pub struct ParsedCommand {
     pub params: Vec<String>,
 }
 
-fn init_args(expected_args: Vec<String>) -> Vec<ParsedArgs> {
-    let mut args: Vec<ParsedArgs> = vec![];
-    for arg_name in expected_args {
-        args.push(ParsedArgs {
-            arg_name: String::from(arg_name),
-            arg_value: ArgValue::NotProvided,
-        });
-    }
-    args
-}
-
 pub fn parse_cli(
     command: Vec<String>,
     expected_args: Vec<String>,
     arg_prefix: String,
 ) -> ParsedCommand {
+    let mut parsed_command = parse_parameters_and_args(&command, arg_prefix);
+    parsed_command = group_args_by_name(&parsed_command);
+    parsed_command = add_not_provided_but_expected_args(&parsed_command, expected_args);
+
+    parsed_command
+}
+
+fn parse_parameters_and_args(command: &Vec<String>, arg_prefix: String) -> ParsedCommand {
     let command_name = command
         .first()
         .expect("[Cli Parser] Expect to receive non-empty command input.");
-
-    let mut args = init_args(expected_args.clone());
+    let mut args: Vec<ParsedArgs> = vec![];
     let mut params: Vec<String> = vec![];
-    let mut current_arg_name = String::from("");
-
+    let mut current_arg: Option<ParsedArgs> = None;
     for i in 1..command.len() {
-        let v = &command[i];
-        if v.starts_with(&arg_prefix) {
-            let arg_name = v
+        let value = &command[i];
+        if value.starts_with(&arg_prefix) {
+            let arg_name = value
                 .strip_prefix(&arg_prefix)
                 .expect("[Cli Parser] An error occured.");
 
-            if current_arg_name != "" {
-                match args.iter_mut().find(|a| a.arg_name == current_arg_name) {
-                    Some(argument) => argument.arg_value = ArgValue::NoValue,
-                    None => {
-                        args.push(ParsedArgs {
-                            arg_name: current_arg_name,
-                            arg_value: ArgValue::NotProvided,
-                        });
-                    }
-                }
+            if let Some(arg_value) = current_arg {
+                args.push(arg_value);
             }
 
-            current_arg_name = String::from(arg_name);
+            current_arg = Some(ParsedArgs {
+                arg_name: String::from(arg_name),
+                arg_value: ArgValue::NoValue,
+            });
             continue;
         }
 
-        if current_arg_name == "" {
-            params.push(String::from(v));
+        if current_arg.is_none() {
+            params.push(String::from(value));
         } else {
-            let current_arg = match args.iter_mut().find(|a| a.arg_name == current_arg_name.clone()) {
-                Some(argument) => argument,
-                None => {
-                    let parsed_arg = ParsedArgs {
-                        arg_name: current_arg_name.clone(),
-                        arg_value: ArgValue::NotProvided,
-                    };
-                    args.push(parsed_arg);
-                    args.iter_mut().find(|a| a.arg_name == current_arg_name).expect("The correct argument have just been added previously. Should be able to find it in vector.")
-                }
-            };
+            if let Some(mut current) = current_arg {
+                current.arg_value = ArgValue::Single(String::from(value));
+                args.push(current);
+            }
 
-            current_arg.arg_value = match &current_arg.arg_value {
-                ArgValue::NotProvided => ArgValue::Single(String::from(v)),
-                ArgValue::Multiple(a) => {
-                    let mut vec_clone = a.clone();
-                    vec_clone.push(String::from(v));
-                    ArgValue::Multiple(vec_clone)
-                }
-                ArgValue::Single(a) => ArgValue::Multiple(vec![a.clone(), String::from(v)]),
-                ArgValue::NoValue => panic!(
-                    "[Cli Parser] Arguments has already been encoutered as providing no value."
-                ),
-            };
-
-            current_arg_name = String::from("");
+            current_arg = None;
         }
     }
 
-    if current_arg_name != "" {
-        match args.iter_mut().find(|a| a.arg_name == current_arg_name) {
-            Some(argument) => argument.arg_value = ArgValue::NoValue,
-            None => {
-                args.push(ParsedArgs {
-                    arg_name: current_arg_name,
-                    arg_value: ArgValue::NotProvided,
-                });
-            }
-        }
+    // Handle last argument if its a no value argument.
+    if let Some(arg_value) = current_arg {
+        args.push(arg_value);
     }
 
     ParsedCommand {
         command_name: String::from(command_name).clone(),
         args,
         params,
+    }
+}
+
+fn group_args_by_name(parsed_command: &ParsedCommand) -> ParsedCommand {
+    let mut grouped_args: Vec<ParsedArgs> = vec![];
+    for arg in &parsed_command.args {
+        let current_arg_name = arg.arg_name.clone();
+        let arg_value = arg.arg_value.clone();
+        match grouped_args
+            .iter_mut()
+            .find(|a| a.arg_name == current_arg_name.clone())
+        {
+            Some(argument) => {
+                if let ArgValue::Single(value) = arg_value {
+                    argument.arg_value = match &argument.arg_value {
+                        ArgValue::NotProvided => ArgValue::Single(String::from(value)),
+                        ArgValue::Multiple(a) => {
+                            let mut vec_clone = a.clone();
+                            vec_clone.push(String::from(value));
+                            ArgValue::Multiple(vec_clone)
+                        }
+                        ArgValue::Single(a) => {
+                            ArgValue::Multiple(vec![a.clone(), String::from(value)])
+                        }
+                        ArgValue::NoValue => ArgValue::Single(String::from(value)),
+                    };
+                }
+            }
+            None => {
+                grouped_args.push(ParsedArgs {
+                    arg_name: current_arg_name.clone(),
+                    arg_value: arg_value.clone(),
+                });
+            }
+        };
+    }
+
+    ParsedCommand {
+        command_name: parsed_command.command_name.clone(),
+        args: grouped_args,
+        params: parsed_command.params.clone(),
+    }
+}
+
+fn add_not_provided_but_expected_args(
+    parsed_command: &ParsedCommand,
+    expected_args: Vec<String>,
+) -> ParsedCommand {
+    let mut with_args = parsed_command.args.clone();
+    for arg_name in expected_args {
+        if !parsed_command
+            .args
+            .iter()
+            .any(|arg| arg.arg_name == arg_name)
+        {
+            with_args.push(ParsedArgs {
+                arg_name: String::from(arg_name),
+                arg_value: ArgValue::NotProvided,
+            });
+        }
+    }
+
+    ParsedCommand {
+        command_name: parsed_command.command_name.clone(),
+        args: with_args,
+        params: parsed_command.params.clone(),
     }
 }

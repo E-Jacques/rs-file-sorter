@@ -157,18 +157,18 @@ mod parser_tests {
         );
         assert_eq!(parsed_command.params.len(), 0);
         assert_eq!(parsed_command.args.len(), 4);
-        assert_eq!(parsed_command.args[0].arg_name, "arg-1");
-        assert_eq!(parsed_command.args[0].arg_value, ArgValue::NotProvided);
-        assert_eq!(parsed_command.args[1].arg_name, "arg-2");
-        assert_eq!(parsed_command.args[1].arg_value, ArgValue::NoValue);
-        assert_eq!(parsed_command.args[2].arg_name, "arg-3");
+        assert_eq!(parsed_command.args[3].arg_name, "arg-1");
+        assert_eq!(parsed_command.args[3].arg_value, ArgValue::NotProvided);
+        assert_eq!(parsed_command.args[0].arg_name, "arg-2");
+        assert_eq!(parsed_command.args[0].arg_value, ArgValue::NoValue);
+        assert_eq!(parsed_command.args[1].arg_name, "arg-3");
         assert_eq!(
-            parsed_command.args[2].arg_value,
+            parsed_command.args[1].arg_value,
             ArgValue::Multiple(vec![String::from("value-1"), String::from("value-2")])
         );
-        assert_eq!(parsed_command.args[3].arg_name, "arg-4");
+        assert_eq!(parsed_command.args[2].arg_name, "arg-4");
         assert_eq!(
-            parsed_command.args[3].arg_value,
+            parsed_command.args[2].arg_value,
             ArgValue::Single(String::from("value-3"))
         );
     }
