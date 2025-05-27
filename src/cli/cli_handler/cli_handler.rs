@@ -1,7 +1,7 @@
 use crate::utils::logger::Logger;
 
 use super::{
-    compound_structs::{ArgBuilder, ParamBuilder},
+    compound_structs::{ArgBuilder, ArgValidationErrorEnum, ParamBuilder},
     parser::{parse_cli, ParsedCommand},
 };
 
@@ -83,14 +83,25 @@ impl CliHandler {
                 return;
             }
         };
-        let expected_args = CliHandler::expected_arg_from(&command_handler);
-        let parsed_command = parse_cli(command, expected_args, arg_prefix);
-        if !self.validate(command_handler.clone(), parsed_command.clone()) {
-            return;
-        }
 
-        let command_handler_fn = command_handler.handler;
-        command_handler_fn(&parsed_command.clone(), &command_handler.logger)
+        match parse_cli(command, &command_handler, arg_prefix) {
+            Ok(parsed_command) => {
+                if !self.validate(command_handler.clone(), parsed_command.clone()) {
+                    return;
+                }
+
+                let command_handler_fn = command_handler.handler;
+                command_handler_fn(&parsed_command.clone(), &command_handler.logger)
+            }
+            Err(parser_error) => match parser_error {
+                super::parser::ParserError::UnkownArgument(parsed_args) => {
+                    command_handler.logger.error(&format!(
+                        "unknown argument: got '{}' when expecting {}. See 'help' to get more informations.",
+                        parsed_args.arg_name, command_handler.args.iter().map(|arg_spec| arg_spec.name.clone()).collect::<Vec<String>>().join(", ")
+                    ));
+                }
+            },
+        }
     }
 
     fn handle_help(&self, command: &Vec<String>) -> String {
@@ -114,16 +125,6 @@ impl CliHandler {
             .clone()
             .into_iter()
             .find(|handler| handler.command_name == command_name.to_string())
-    }
-
-    fn expected_arg_from(command_handler: &CliHandlerCommand) -> Vec<String> {
-        let expected_args = command_handler
-            .args
-            .clone()
-            .into_iter()
-            .map(|arg| arg.name.to_string())
-            .collect();
-        expected_args
     }
 
     fn extract_command_from_input(input: String) -> Vec<String> {
@@ -191,19 +192,17 @@ impl CliHandler {
 
         for arg in command_specification.args.clone().into_iter() {
             match arg.validate(parsed_command.clone()) {
-                super::compound_structs::ArgValidationErrorEnum::NoError => {
+                ArgValidationErrorEnum::NoError => {
                     continue;
                 }
-                super::compound_structs::ArgValidationErrorEnum::UnknownArgument => {
+                ArgValidationErrorEnum::UnknownArgument => {
                     command_specification.logger.error(&format!(
-                    "unknown argument: got '{}' when expecting {}. See 'help' to get more informations.",
-                    arg.name, arg_specification_names.join(", ")
-                ));
+                        "unknown argument: got '{}' when expecting {}. See 'help' to get more informations.",
+                        arg.name, arg_specification_names.join(", ")
+                    ));
                     return Some(false);
                 }
-                super::compound_structs::ArgValidationErrorEnum::UnexpectedValue(
-                    received_value,
-                ) => {
+                ArgValidationErrorEnum::UnexpectedValue(received_value) => {
                     let possible_values = arg.clone().expected_value_type;
                     let possible_values_string = possible_values
                         .into_iter()
@@ -253,17 +252,17 @@ mod cli_handler_help_tests {
                 String::from("my-command's description"),
                 Logger::new("my-command", true),
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::NoValue],
             )
-            .args(
+            .argument(
                 String::from("arg-2"),
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::Single],
             )
-            .params(String::from("params-1"), String::from("desc for params-1"))
+            .parameter(String::from("params-1"), String::from("desc for params-1"))
             .handler(|_, _| ())
             .command(
                 String::from("command-2"),
@@ -287,17 +286,17 @@ mod cli_handler_help_tests {
                 String::from("my-command's description"),
                 Logger::new("my-command", true),
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("desc for arg-1."),
                 vec![ArgValueTypes::NoValue],
             )
-            .args(
+            .argument(
                 String::from("arg-2"),
                 String::from("desc for arg-2."),
                 vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
             )
-            .params(String::from("params-1"), String::from("desc for params-1"))
+            .parameter(String::from("params-1"), String::from("desc for params-1"))
             .handler(|_, _| ())
             .command(
                 String::from("command-2"),
@@ -323,17 +322,17 @@ mod cli_handler_help_tests {
                 String::from("my-command's description"),
                 Logger::new("my-command", true),
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::NoValue],
             )
-            .args(
+            .argument(
                 String::from("arg-2"),
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
             )
-            .params(String::from("params-1"), String::from("desc for params-1"))
+            .parameter(String::from("params-1"), String::from("desc for params-1"))
             .handler(|_, _| ())
             .command(
                 String::from("command-2"),

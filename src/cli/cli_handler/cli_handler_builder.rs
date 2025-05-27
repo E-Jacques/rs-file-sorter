@@ -24,6 +24,7 @@ impl From<ArgValueTypes> for String {
 }
 
 pub struct CliHandlerBuilder {
+    last_added_arg: Option<String>,
     current_command: Option<CommandBuilder>,
     current_args: Option<Vec<ArgBuilder>>,
     current_params: Option<Vec<ParamBuilder>>,
@@ -35,6 +36,7 @@ pub struct CliHandlerBuilder {
 impl CliHandlerBuilder {
     pub fn new(logger: Logger) -> Self {
         CliHandlerBuilder {
+            last_added_arg: None,
             current_command: None,
             current_args: None,
             current_params: None,
@@ -61,7 +63,7 @@ impl CliHandlerBuilder {
         self
     }
 
-    pub fn args(
+    pub fn argument(
         mut self,
         name: String,
         description: String,
@@ -71,6 +73,7 @@ impl CliHandlerBuilder {
             name: name.clone(),
             description,
             expected_value_type: expected_value_type.clone(),
+            parent_name: None,
         };
 
         if expected_value_type.is_empty() {
@@ -84,6 +87,7 @@ impl CliHandlerBuilder {
             ));
         }
 
+        self.last_added_arg = Some(name.clone());
         match &self.current_args {
             Some(arg) => {
                 let arg_already_specified = arg.iter().any(|a| a.name == name);
@@ -91,7 +95,7 @@ impl CliHandlerBuilder {
                     let command_name = self
                         .current_command
                         .clone()
-                        .expect("Should be able to acces command when calling args")
+                        .expect("Should be able to access command when calling args")
                         .name
                         .clone();
                     self.logger.error(&format!(
@@ -112,7 +116,55 @@ impl CliHandlerBuilder {
         self
     }
 
-    pub fn params(mut self, name: String, description: String) -> Self {
+    pub fn linked_arg(
+        mut self,
+        name: String,
+        description: String,
+        expected_value_type: Vec<ArgValueTypes>,
+    ) -> Self {
+        if let Some(parent_name) = self.last_added_arg.clone() {
+            let arg_builder = ArgBuilder {
+                name: name.clone(),
+                description,
+                expected_value_type,
+                parent_name: Some(parent_name.clone()),
+            };
+
+            if self.current_command.is_none() {
+                self.logger.error(&format!(
+                    "cannot specify argument '{name}' outside of command context."
+                ));
+            }
+
+            let current_args = self
+                .current_args
+                .expect("current_args should be set when calling linked_arg");
+            let arg_already_specified = current_args.iter().any(|a| a.name == name);
+            if arg_already_specified {
+                let command_name = self
+                    .current_command
+                    .clone()
+                    .expect("Should be able to access command when calling args")
+                    .name
+                    .clone();
+                self.logger.error(&format!(
+                    "argument '{name}' have already been declared for command '{}'.",
+                    command_name
+                ));
+            }
+            let mut arg_vec = current_args.clone();
+
+            arg_vec.push(arg_builder);
+            self.current_args = Some(arg_vec);
+        } else {
+            self.logger
+                .error("linked_arg should be called after args method.");
+        }
+
+        self
+    }
+
+    pub fn parameter(mut self, name: String, description: String) -> Self {
         let param_builder = ParamBuilder {
             name: name.clone(),
             description,
