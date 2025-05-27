@@ -1,30 +1,66 @@
 #[cfg(test)]
 mod parser_tests {
-    use crate::cli::cli_handler::parser::{parse_cli, ArgValue};
+    use crate::{
+        cli::cli_handler::{
+            cli_handler::CliHandlerCommand,
+            cli_handler_builder::ArgValueTypes,
+            compound_structs::ArgBuilder,
+            parser::{parse_cli, ArgDatum, ArgValue},
+        },
+        utils::logger::Logger,
+    };
+
+    fn get_handler_for_expected_args(expected_args: Vec<String>) -> CliHandlerCommand {
+        CliHandlerCommand {
+            logger: Logger::new("name", true),
+            command_name: "command name".to_string(),
+            command_description: String::from("Test command handler decription"),
+            args: expected_args
+                .iter()
+                .map(|arg_name| ArgBuilder {
+                    name: arg_name.clone(),
+                    description: String::from(format!("description for {arg_name}")),
+                    expected_value_type: vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
+                    parent_name: None,
+                })
+                .collect(),
+            params: vec![],
+            handler: |_, _| (),
+        }
+    }
 
     #[test]
     #[should_panic(expected = "[Cli Parser] Expect to receive non-empty command input.")]
     fn test_parser_no_command_panic() {
-        parse_cli(vec![], vec![], String::from(""));
+        let command_handler = get_handler_for_expected_args(vec![]);
+        parse_cli(vec![], &command_handler, String::from(""));
     }
 
     #[test]
     fn test_parser_correctly_parse_command_name() {
-        let parsed_command = parse_cli(vec![String::from("my-cmd")], vec![], String::from("--"));
+        let command_handler = get_handler_for_expected_args(vec![]);
+        let parsed_command = parse_cli(
+            vec![String::from("my-cmd")],
+            &command_handler,
+            String::from("--"),
+        )
+        .unwrap();
         assert_eq!(parsed_command.command_name, String::from("my-cmd"));
     }
 
     #[test]
     fn test_parser_correctly_parse_params() {
+        let command_handler = get_handler_for_expected_args(vec![]);
         let parsed_command = parse_cli(
             vec![
                 String::from("my-cmd"),
                 String::from("param-1"),
                 String::from("param-2"),
             ],
-            vec![],
+            &command_handler,
             String::from("--"),
-        );
+        )
+        .unwrap();
         assert_eq!(parsed_command.params.len(), 2);
         assert_eq!(parsed_command.params[0], String::from("param-1"));
         assert_eq!(parsed_command.params[1], String::from("param-2"));
@@ -32,26 +68,33 @@ mod parser_tests {
 
     #[test]
     fn test_parser_correctly_parse_args_with_single_value() {
+        let command_handler = get_handler_for_expected_args(vec![String::from("arg-1")]);
         let parsed_command = parse_cli(
             vec![
                 String::from("my-cmd"),
                 String::from("--arg-1"),
                 String::from("value-1"),
             ],
-            vec![String::from("arg-1")],
+            &command_handler,
             String::from("--"),
-        );
+        )
+        .unwrap();
         assert_eq!(parsed_command.params.len(), 0);
         assert_eq!(parsed_command.args.len(), 1);
         assert_eq!(parsed_command.args[0].arg_name, "arg-1");
         assert_eq!(
             parsed_command.args[0].arg_value,
-            ArgValue::Single(String::from("value-1"))
+            ArgValue::Single(ArgDatum {
+                value: Some(String::from("value-1")),
+                child_args: vec![]
+            })
         );
     }
 
     #[test]
     fn test_parser_correctly_parse_two_args_with_single_value() {
+        let command_handler =
+            get_handler_for_expected_args(vec![String::from("arg-1"), String::from("arg-2")]);
         let parsed_command = parse_cli(
             vec![
                 String::from("my-cmd"),
@@ -60,25 +103,33 @@ mod parser_tests {
                 String::from("--arg-2"),
                 String::from("value-2"),
             ],
-            vec![String::from("arg-1"), String::from("arg-2")],
+            &command_handler,
             String::from("--"),
-        );
+        )
+        .unwrap();
         assert_eq!(parsed_command.params.len(), 0);
         assert_eq!(parsed_command.args.len(), 2);
         assert_eq!(parsed_command.args[0].arg_name, "arg-1");
         assert_eq!(
             parsed_command.args[0].arg_value,
-            ArgValue::Single(String::from("value-1"))
+            ArgValue::Single(ArgDatum {
+                value: Some(String::from("value-1")),
+                child_args: vec![]
+            })
         );
         assert_eq!(parsed_command.args[1].arg_name, "arg-2");
         assert_eq!(
             parsed_command.args[1].arg_value,
-            ArgValue::Single(String::from("value-2"))
+            ArgValue::Single(ArgDatum {
+                value: Some(String::from("value-2")),
+                child_args: vec![]
+            })
         );
     }
 
     #[test]
     fn test_parser_correctly_parse_args_with_multiple_values() {
+        let command_handler = get_handler_for_expected_args(vec![String::from("arg-1")]);
         let parsed_command = parse_cli(
             vec![
                 String::from("my-cmd"),
@@ -89,24 +140,37 @@ mod parser_tests {
                 String::from("--arg-1"),
                 String::from("value-3"),
             ],
-            vec![String::from("arg-1")],
+            &command_handler,
             String::from("--"),
-        );
+        )
+        .unwrap();
         assert_eq!(parsed_command.params.len(), 0);
         assert_eq!(parsed_command.args.len(), 1);
         assert_eq!(parsed_command.args[0].arg_name, "arg-1");
         assert_eq!(
             parsed_command.args[0].arg_value,
-            ArgValue::Multiple(vec![
-                String::from("value-1"),
-                String::from("value-2"),
-                String::from("value-3")
-            ])
+            ArgValue::Multiple(
+                vec![
+                    String::from("value-1"),
+                    String::from("value-2"),
+                    String::from("value-3")
+                ]
+                .iter()
+                .map(|value| {
+                    ArgDatum {
+                        value: Some(value.to_string()),
+                        child_args: vec![],
+                    }
+                })
+                .collect()
+            )
         );
     }
 
     #[test]
     fn test_parser_correctly_parse_combinaison_of_singe_arg_and_multiple_arg() {
+        let command_handler =
+            get_handler_for_expected_args(vec![String::from("arg-1"), String::from("arg-2")]);
         let parsed_command = parse_cli(
             vec![
                 String::from("my-cmd"),
@@ -117,25 +181,45 @@ mod parser_tests {
                 String::from("--arg-2"),
                 String::from("value-3"),
             ],
-            vec![String::from("arg-1"), String::from("arg-2")],
+            &command_handler,
             String::from("--"),
-        );
+        )
+        .unwrap();
         assert_eq!(parsed_command.params.len(), 0);
         assert_eq!(parsed_command.args.len(), 2);
         assert_eq!(parsed_command.args[0].arg_name, "arg-1");
         assert_eq!(
             parsed_command.args[0].arg_value,
-            ArgValue::Multiple(vec![String::from("value-1"), String::from("value-2")])
+            ArgValue::Multiple(
+                vec![String::from("value-1"), String::from("value-2")]
+                    .iter()
+                    .map(|value| {
+                        ArgDatum {
+                            value: Some(value.to_string()),
+                            child_args: vec![],
+                        }
+                    })
+                    .collect()
+            )
         );
         assert_eq!(parsed_command.args[1].arg_name, "arg-2");
         assert_eq!(
             parsed_command.args[1].arg_value,
-            ArgValue::Single(String::from("value-3"))
+            ArgValue::Single(ArgDatum {
+                value: Some(String::from("value-3")),
+                child_args: vec![]
+            })
         );
     }
 
     #[test]
     fn test_parser_correctly_parse_combinaison_of_singe_arg_multiple_arg_and_no_value_arg() {
+        let command_handler = get_handler_for_expected_args(vec![
+            String::from("arg-1"),
+            String::from("arg-2"),
+            String::from("arg-3"),
+            String::from("arg-4"),
+        ]);
         let parsed_command = parse_cli(
             vec![
                 String::from("my-cmd"),
@@ -147,51 +231,82 @@ mod parser_tests {
                 String::from("--arg-4"),
                 String::from("value-3"),
             ],
-            vec![
-                String::from("arg-1"),
-                String::from("arg-2"),
-                String::from("arg-3"),
-                String::from("arg-4"),
-            ],
+            &command_handler,
             String::from("--"),
-        );
+        )
+        .unwrap();
+        println!("{:?}", parsed_command.args);
         assert_eq!(parsed_command.params.len(), 0);
         assert_eq!(parsed_command.args.len(), 4);
-        assert_eq!(parsed_command.args[3].arg_name, "arg-1");
-        assert_eq!(parsed_command.args[3].arg_value, ArgValue::NotProvided);
         assert_eq!(parsed_command.args[0].arg_name, "arg-2");
-        assert_eq!(parsed_command.args[0].arg_value, ArgValue::NoValue);
+        assert_eq!(
+            parsed_command.args[0].arg_value,
+            ArgValue::Single(ArgDatum {
+                value: None,
+                child_args: vec![]
+            })
+        );
         assert_eq!(parsed_command.args[1].arg_name, "arg-3");
         assert_eq!(
             parsed_command.args[1].arg_value,
-            ArgValue::Multiple(vec![String::from("value-1"), String::from("value-2")])
+            ArgValue::Multiple(
+                vec![String::from("value-1"), String::from("value-2")]
+                    .iter()
+                    .map(|value| {
+                        ArgDatum {
+                            value: Some(value.to_string()),
+                            child_args: vec![],
+                        }
+                    })
+                    .collect()
+            )
         );
         assert_eq!(parsed_command.args[2].arg_name, "arg-4");
         assert_eq!(
             parsed_command.args[2].arg_value,
-            ArgValue::Single(String::from("value-3"))
+            ArgValue::Single(ArgDatum {
+                value: Some(String::from("value-3")),
+                child_args: vec![]
+            })
         );
+        assert_eq!(parsed_command.args[3].arg_name, "arg-1");
+        assert_eq!(parsed_command.args[3].arg_value, ArgValue::NotProvided);
     }
 
     #[test]
     fn test_parser_two_following_args_should_create_two_no_value_args() {
+        let command_handler =
+            get_handler_for_expected_args(vec![String::from("arg-1"), String::from("arg-2")]);
         let parsed_command = parse_cli(
             vec![
                 String::from("my-cmd"),
                 String::from("--arg-1"),
                 String::from("--arg-2"),
             ],
-            vec![String::from("arg-1"), String::from("arg-2")],
+            &command_handler,
             String::from("--"),
-        );
+        )
+        .unwrap();
 
         assert_eq!(parsed_command.params.len(), 0);
 
         assert_eq!(parsed_command.args.len(), 2);
         assert_eq!(parsed_command.args[0].arg_name, String::from("arg-1"));
-        assert_eq!(parsed_command.args[0].arg_value, ArgValue::NoValue);
+        assert_eq!(
+            parsed_command.args[0].arg_value,
+            ArgValue::Single(ArgDatum {
+                value: None,
+                child_args: vec![]
+            })
+        );
         assert_eq!(parsed_command.args[1].arg_name, String::from("arg-2"));
-        assert_eq!(parsed_command.args[1].arg_value, ArgValue::NoValue);
+        assert_eq!(
+            parsed_command.args[1].arg_value,
+            ArgValue::Single(ArgDatum {
+                value: None,
+                child_args: vec![]
+            })
+        );
     }
 }
 
@@ -280,7 +395,7 @@ mod cli_handler_builder_tests {
                 String::from("my description"),
                 Logger::new("my-command", true),
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("description of arg-1"),
                 vec![ArgValueTypes::NoValue],
@@ -307,7 +422,7 @@ mod cli_handler_builder_tests {
                 String::from("my description"),
                 Logger::new("my-command", true),
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("description of arg-1"),
                 vec![ArgValueTypes::NoValue, ArgValueTypes::Single],
@@ -335,12 +450,12 @@ mod cli_handler_builder_tests {
                 String::from("my description"),
                 Logger::new("my-command", true),
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("description of arg-1"),
                 vec![ArgValueTypes::NoValue],
             )
-            .args(
+            .argument(
                 String::from("arg-2"),
                 String::from("description of arg-2"),
                 vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
@@ -377,12 +492,12 @@ mod cli_handler_builder_tests {
                 String::from("my description"),
                 Logger::new("my-command", true),
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("This is a description of arg-1"),
                 vec![ArgValueTypes::NoValue],
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("This is a description of arg-1"),
                 vec![ArgValueTypes::NoValue],
@@ -403,7 +518,7 @@ mod cli_handler_builder_tests {
                 String::from("my description"),
                 Logger::new("my-command", true),
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("This is a description of arg-1"),
                 vec![],
@@ -419,7 +534,7 @@ mod cli_handler_builder_tests {
     fn test_error_when_arg_is_declare_outside_of_command_context() {
         let logger = Logger::new("TEST_COMMAND", true);
         CliHandlerBuilder::new(logger)
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("This is a description of arg-1"),
                 vec![ArgValueTypes::NoValue],
@@ -438,7 +553,7 @@ mod cli_handler_builder_tests {
                 String::from("my description"),
                 Logger::new("my-command", true),
             )
-            .params(
+            .parameter(
                 String::from("param-1"),
                 String::from("description of param-1"),
             )
@@ -465,11 +580,11 @@ mod cli_handler_builder_tests {
                 String::from("my description"),
                 Logger::new("my-command", true),
             )
-            .params(
+            .parameter(
                 String::from("param-1"),
                 String::from("description of param-1"),
             )
-            .params(
+            .parameter(
                 String::from("param-2"),
                 String::from("description of param-2"),
             )
@@ -502,11 +617,11 @@ mod cli_handler_builder_tests {
                 String::from("my description"),
                 Logger::new("my-command", true),
             )
-            .params(
+            .parameter(
                 String::from("param-1"),
                 String::from("This is a description of param-1"),
             )
-            .params(
+            .parameter(
                 String::from("param-1"),
                 String::from("This is a description of param-1"),
             )
@@ -521,7 +636,7 @@ mod cli_handler_builder_tests {
     fn test_error_when_param_is_declare_outside_of_command_context() {
         let logger = Logger::new("TEST_COMMAND", true);
         CliHandlerBuilder::new(logger)
-            .params(
+            .parameter(
                 String::from("param-1"),
                 String::from("This is a description of param-1"),
             )
@@ -557,7 +672,7 @@ mod cli_handler_tests {
     use crate::{
         cli::cli_handler::{
             cli_handler_builder::{ArgValueTypes, CliHandlerBuilder},
-            parser::ArgValue,
+            parser::{ArgDatum, ArgValue, ParsedArgs},
         },
         utils::logger::Logger,
     };
@@ -599,12 +714,12 @@ mod cli_handler_tests {
                 String::from("description"),
                 Logger::new("my-command", true),
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::NoValue],
             )
-            .args(
+            .argument(
                 String::from("arg-2"),
                 String::from("desc for arg-2"),
                 vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
@@ -623,7 +738,7 @@ mod cli_handler_tests {
                 String::from("description"),
                 Logger::new("my-command", true),
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
@@ -642,7 +757,7 @@ mod cli_handler_tests {
                 String::from("description"),
                 Logger::new("my-command", true),
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::NoValue, ArgValueTypes::Multiple],
@@ -661,7 +776,7 @@ mod cli_handler_tests {
                 String::from("description"),
                 Logger::new("my-command", true),
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::NoValue, ArgValueTypes::Single],
@@ -680,8 +795,8 @@ mod cli_handler_tests {
                 String::from("description"),
                 Logger::new("my-command", true),
             )
-            .params(String::from("param-1-name"), String::from("param-1-desc"))
-            .params(String::from("param-2-name"), String::from("param-2-desc"))
+            .parameter(String::from("param-1-name"), String::from("param-1-desc"))
+            .parameter(String::from("param-2-name"), String::from("param-2-desc"))
             .handler(|_, _| {})
             .build();
         cli_handler.handle(String::from("my-command param-1 param-2 param-3"));
@@ -710,8 +825,8 @@ mod cli_handler_tests {
                 String::from("description"),
                 Logger::new("my-command", true),
             )
-            .params(String::from("param-1-name"), String::from("param-1-desc"))
-            .params(String::from("param-2-name"), String::from("param-2-desc"))
+            .parameter(String::from("param-1-name"), String::from("param-1-desc"))
+            .parameter(String::from("param-2-name"), String::from("param-2-desc"))
             .handler(|_, _| {})
             .build();
         cli_handler.handle(String::from("my-command param-1"));
@@ -727,17 +842,17 @@ mod cli_handler_tests {
                 String::from("description"),
                 Logger::new("my-command", true),
             )
-            .args(
+            .argument(
                 String::from("arg-1"),
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::NoValue],
             )
-            .args(
+            .argument(
                 String::from("arg-2"),
                 String::from("desc for arg-1"),
                 vec![ArgValueTypes::Single],
             )
-            .params(String::from("params-1"), String::from("desc for params-1"))
+            .parameter(String::from("params-1"), String::from("desc for params-1"))
             // It's hard to test the fact that the handler will be called.
             // TODO: That's a futur me assignment.
             .handler(|parsed_command, _| {
@@ -746,11 +861,20 @@ mod cli_handler_tests {
                 assert_eq!(parsed_command.command_name, String::from("my-command"));
                 assert_eq!(parsed_command.args.len(), 2);
                 assert_eq!(parsed_command.args[0].arg_name, String::from("arg-1"));
-                assert_eq!(parsed_command.args[0].arg_value, ArgValue::NoValue);
+                assert_eq!(
+                    parsed_command.args[0].arg_value,
+                    ArgValue::Single(ArgDatum {
+                        value: None,
+                        child_args: vec![]
+                    })
+                );
                 assert_eq!(parsed_command.args[1].arg_name, String::from("arg-2"));
                 assert_eq!(
                     parsed_command.args[1].arg_value,
-                    ArgValue::Single(String::from("arg-2-value"))
+                    ArgValue::Single(ArgDatum {
+                        value: Some(String::from("arg-2-value")),
+                        child_args: vec![]
+                    })
                 );
                 assert_eq!(parsed_command.params.len(), 1);
                 assert_eq!(parsed_command.params[0], String::from("param-1-value"));
@@ -762,5 +886,77 @@ mod cli_handler_tests {
         cli_handler.handle(String::from(
             "my-command --arg-1 --arg-2 arg-2-value param-1-value",
         ));
+    }
+
+    #[test]
+    fn test_correctly_parsed_nested_args() {
+        let cli_handler = CliHandlerBuilder::new(Logger::new("TEST_COMMAND", true))
+            .command(
+                String::from("my-command"),
+                String::from("my-command's description"),
+                Logger::new("my-command", true),
+            )
+            .argument(
+                String::from("arg-1"),
+                String::from("desc for arg-1"),
+                vec![ArgValueTypes::Multiple],
+            )
+            .linked_arg(
+                String::from("arg-2"),
+                String::from("desc for arg-2"),
+                vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
+            )
+            .parameter(String::from("params-1"), String::from("desc for params-1"))
+            .handler(|parsed_command, _| {
+                assert_eq!(parsed_command.command_name, "my-command");
+
+                // assert params
+                assert_eq!(parsed_command.params.len(), 1);
+                assert_eq!(parsed_command.params[0], "my-param");
+
+                // assert arguments non-nested number
+                assert_eq!(parsed_command.args.len(), 2);
+
+                // assert first argument
+                let first_arg = &parsed_command.args[0];
+                assert_eq!(first_arg.arg_name, "arg-1");
+                assert_eq!(
+                    first_arg.arg_value,
+                    ArgValue::Multiple(vec![
+                        ArgDatum {
+                            value: None,
+                            child_args: vec![ParsedArgs {
+                                arg_name: String::from("arg-2"),
+                                arg_value: ArgValue::Single(ArgDatum {
+                                    value: Some(String::from("value1")),
+                                    child_args: vec![]
+                                })
+                            }]
+                        },
+                        ArgDatum {
+                            value: Some(String::from("my-arg-1-value")),
+                            child_args: vec![ParsedArgs {
+                                arg_name: String::from("arg-2"),
+                                arg_value: ArgValue::Multiple(vec![
+                                    ArgDatum {
+                                        value: Some(String::from("value2")),
+                                        child_args: vec![]
+                                    },
+                                    ArgDatum {
+                                        value: Some(String::from("value3")),
+                                        child_args: vec![]
+                                    }
+                                ])
+                            }]
+                        }
+                    ])
+                );
+            })
+            .build();
+
+        let input = String::from(
+            "my-command my-param --arg-1 --arg-2 value1 --arg-1 my-arg-1-value --arg-2 value2 --arg-2 value3",
+        );
+        cli_handler.handle(input);
     }
 }
