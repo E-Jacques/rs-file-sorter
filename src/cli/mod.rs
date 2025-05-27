@@ -18,15 +18,20 @@ pub fn handle(input: String, debug_mode: Option<bool>) {
         String::from("sort your files, from/to given directories, we specific rules."), 
         sort_command_logger
     )
-    .args(
+    .argument(
         String::from("stack"), 
         String::from("rule that specify where to put the files. first specified element will be the first directory that you will met and so."), 
         vec![ArgValueTypes::Single, ArgValueTypes::Multiple]
     )
-    .params(
+    .linked_arg(
+        String::from("sub-stack"), 
+        String::from("associate a sorting rule with the previous combined stack."), 
+        vec![ArgValueTypes::Single, ArgValueTypes::Multiple]
+    )
+    .parameter(
         String::from("from"), String::from("the directory from which you need to extract the files.")
     )
-    .params(
+    .parameter(
         String::from("to"), 
         String::from("the directory to which you need to put the organized files.")
     )

@@ -1,14 +1,11 @@
 use crate::utils::logger::Logger;
 
-use super::{
-    cli_handler_builder::ArgValueTypes,
-    parser::{ArgValue, ParsedCommand},
-};
+use super::{cli_handler_builder::ArgValueTypes, parser::ParsedCommand};
 
 pub enum ArgValidationErrorEnum {
     NoError,
     UnknownArgument,
-    UnexpectedValue(ArgValue),
+    UnexpectedValue(ArgValueTypes),
 }
 
 #[derive(Debug, Clone)]
@@ -23,10 +20,12 @@ pub struct ArgBuilder {
     pub name: String,
     pub description: String,
     pub expected_value_type: Vec<ArgValueTypes>,
+    pub parent_name: Option<String>,
 }
 
 impl ArgBuilder {
     pub fn validate(&self, parsed_command: ParsedCommand) -> ArgValidationErrorEnum {
+        println!("validate : {:?}", parsed_command.clone());
         let parsed_arg = match parsed_command
             .args
             .into_iter()
@@ -38,12 +37,18 @@ impl ArgBuilder {
             }
         };
 
-        let parsed_arg_type_accepted = self
-            .expected_value_type
-            .iter()
-            .any(|expected_value| parsed_arg.arg_value.is_same_type(expected_value.clone()));
+        // FIXME: add recursive validation
+        if self.parent_name.is_some() {
+            return ArgValidationErrorEnum::NoError;
+        }
+
+        let parsed_arg_type_accepted = self.expected_value_type.iter().any(|expected_value| {
+            ArgValueTypes::from(parsed_arg.arg_value.clone()) == *expected_value
+        });
         if !parsed_arg_type_accepted {
-            return ArgValidationErrorEnum::UnexpectedValue(parsed_arg.arg_value);
+            return ArgValidationErrorEnum::UnexpectedValue(ArgValueTypes::from(
+                parsed_arg.arg_value,
+            ));
         }
 
         ArgValidationErrorEnum::NoError
