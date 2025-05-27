@@ -70,15 +70,21 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
             logger.error("stack argument haven't been provided.");
             panic!();
         }
-        ArgValue::NoValue => {
-            logger.error("a value needs to be assigned to the stack argument.");
-            panic!();
-        }
         ArgValue::Multiple(stacks) => stacks,
         ArgValue::Single(stack) => vec![stack],
     };
 
-    let sorting_strategies = get_storting_strategies(stacks, sorting_strategies_list, &logger);
+    let stack_names: Vec<String> = stacks
+        .into_iter()
+        .map(|arg| match arg.value {
+            Some(stack_name) => stack_name,
+            None => {
+                logger.error("a value needs to be assigned to the stack argument.");
+                panic!();
+            }
+        })
+        .collect();
+    let sorting_strategies = get_storting_strategies(stack_names, sorting_strategies_list, &logger);
 
     let logger_borrowed = &logger.clone();
     let rename_error_handler = |old_filename: &_, new_filename: &_| {
@@ -131,6 +137,8 @@ fn get_storting_strategies(
 
 #[cfg(test)]
 mod tests_exec_sort_command_panics {
+    use crate::cli::cli_handler::parser::ArgDatum;
+
     use super::*;
 
     #[test]
@@ -181,7 +189,7 @@ mod tests_exec_sort_command_panics {
         exec_sort_command(
             vec![ParsedArgs {
                 arg_name: String::from("stack"),
-                arg_value: ArgValue::NoValue,
+                arg_value: ArgValue::Single(ArgDatum::new()),
             }],
             vec![
                 String::from("tests/rsc/files/output/"),
@@ -199,7 +207,10 @@ mod tests_exec_sort_command_panics {
         exec_sort_command(
             vec![ParsedArgs {
                 arg_name: String::from("stack"),
-                arg_value: ArgValue::Single(String::from("unknown_stack")),
+                arg_value: ArgValue::Single(ArgDatum {
+                    value: Some(String::from("unknown_stack")),
+                    child_args: vec![],
+                }),
             }],
             vec![
                 String::from("tests/rsc/files/output/"),
