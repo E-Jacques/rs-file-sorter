@@ -1,6 +1,6 @@
 use iced::{
     border::Radius,
-    widget::{button, column, combo_box, container, row},
+    widget::{button, column, combo_box, container},
     Border, Color, Element, Length,
 };
 
@@ -10,48 +10,42 @@ use crate::{
     utils::string_manipulator::random_string,
 };
 
-use super::icon::{self, icon};
+use super::{
+    editable_tree_item::{DirectoryMovement, EditableTreeItem, Message as ItemMessage},
+    shared::StrategyOptions,
+};
 
 #[derive(Debug, Clone)]
-pub struct EditableFileTree {
-    directories: Vec<Directory>,
-    strategies_options: combo_box::State<String>,
+pub struct EditableTree {
+    items: Vec<Directory>,
+    strategies_options: StrategyOptions,
     strategies_list: Vec<SortingStrategy>,
 }
-
 #[derive(Debug, Clone)]
 struct Directory {
     id: String,
-    name: String,
+    element: EditableTreeItem,
     strategy: Option<SortingStrategy>,
-}
-
-#[derive(Debug, Clone)]
-pub enum DirectoryMovement {
-    Up,
-    Down,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     DirectoryAdded,
-    DirectoryRemoved(String),
-    StrategyChanged(String, String),
-    MoveDirectory(String, DirectoryMovement),
+    ItemEvent(String, ItemMessage),
 }
 
-impl Default for EditableFileTree {
+impl Default for EditableTree {
     fn default() -> Self {
-        EditableFileTree::new()
+        EditableTree::new()
     }
 }
 
-impl EditableFileTree {
+impl EditableTree {
     fn new() -> Self {
         let strategy_list: Vec<SortingStrategy> =
             vec![get_month_sorting_strategy(), get_year_sorting_strategy()];
-        EditableFileTree {
-            directories: vec![],
+        EditableTree {
+            items: vec![],
             strategies_options: combo_box::State::new(
                 strategy_list
                     .iter()
@@ -65,16 +59,16 @@ impl EditableFileTree {
     fn add_directory(&mut self) {
         let new_directory = Directory {
             id: random_string(10),
-            name: String::from(""),
+            element: EditableTreeItem::new(self.strategies_options.clone()),
             strategy: None,
         };
-        self.directories.push(new_directory);
+        self.items.push(new_directory);
     }
 
     fn remove_directory(&mut self, id: String) {
         // Remove directory logic
-        if let Some(index) = self.directories.iter().position(|dir| dir.id == id) {
-            self.directories.remove(index);
+        if let Some(index) = self.items.iter().position(|dir| dir.id == id) {
+            self.items.remove(index);
         } else {
             println!("Directory with id {} not found", id);
         }
@@ -82,41 +76,12 @@ impl EditableFileTree {
 
     pub fn view(&self) -> Element<'_, Message> {
         let columns = self
-            .directories
+            .items
             .iter()
             .map(|dir: &Directory| -> Element<'_, Message> {
-                let dir_id = dir.id.clone();
-                let delete_btn: Element<'_, Message> = button(icon(icon::DELETE))
-                    .on_press(Message::DirectoryRemoved(dir_id.clone()))
-                    .into();
-                let up_btn: Element<'_, Message> = button(icon(icon::ARROW_UP))
-                    .on_press(Message::MoveDirectory(
-                        dir_id.clone(),
-                        DirectoryMovement::Up,
-                    ))
-                    .into();
-                let down_btn: Element<'_, Message> = button(icon(icon::ARROW_DOWN))
-                    .on_press(Message::MoveDirectory(
-                        dir_id.clone(),
-                        DirectoryMovement::Down,
-                    ))
-                    .into();
-
-                let selected_strategy_name: Option<String> =
-                    dir.strategy.as_ref().map(|s| s.name.clone());
-                let strategy_name_input = combo_box(
-                    &self.strategies_options,
-                    "Select a strategy",
-                    selected_strategy_name.as_ref(),
-                    move |selected_strategy| {
-                        Message::StrategyChanged(dir_id.clone(), selected_strategy)
-                    },
-                );
-
-                row![strategy_name_input, delete_btn, up_btn, down_btn]
-                    .spacing(10)
-                    .width(Length::Fill)
-                    .into()
+                dir.element
+                    .view()
+                    .map(move |item_message| Message::ItemEvent(dir.id.clone(), item_message))
             });
 
         let add_directory_btn: Element<'_, Message> = button("Add Directory")
@@ -144,19 +109,31 @@ impl EditableFileTree {
     pub fn update(&mut self, message: Message) {
         match message {
             Message::DirectoryAdded => self.add_directory(),
-            Message::DirectoryRemoved(id) => self.remove_directory(id),
-            Message::MoveDirectory(id, movement) => {
-                self.move_directory(id, movement);
-            }
-            Message::StrategyChanged(id, name) => {
-                self.change_directory_name(id, name);
+            Message::ItemEvent(id, item_message) => {
+                // update the related item element
+                self.items
+                    .iter_mut()
+                    .find(|item| item.id == id)
+                    .unwrap()
+                    .element
+                    .update(item_message.clone());
+
+                // react on the parent side
+                match item_message {
+                    ItemMessage::DirectoryRemoved => self.remove_directory(id),
+                    ItemMessage::MoveDirectory(movement) => {
+                        self.move_directory(id, movement);
+                    }
+                    ItemMessage::StrategyChanged(name) => {
+                        self.change_directory_name(id, name.clone());
+                    }
+                }
             }
         }
     }
 
     fn change_directory_name(&mut self, id: String, name: String) {
-        if let Some(dir) = self.directories.iter_mut().find(|dir| dir.id == id) {
-            dir.name = name.clone();
+        if let Some(dir) = self.items.iter_mut().find(|dir| dir.id == id) {
             if let Some(strategy) = self.strategies_list.iter().find(|s| s.name == name) {
                 dir.strategy = Some(strategy.clone());
             } else {
@@ -168,17 +145,17 @@ impl EditableFileTree {
     }
 
     fn move_directory(&mut self, id: String, movement: DirectoryMovement) {
-        let index = self.directories.iter().position(|dir| dir.id == id);
+        let index = self.items.iter().position(|dir| dir.id == id);
         if let Some(index) = index {
             match movement {
                 DirectoryMovement::Up => {
                     if index > 0 {
-                        self.directories.swap(index, index - 1);
+                        self.items.swap(index, index - 1);
                     }
                 }
                 DirectoryMovement::Down => {
-                    if index < self.directories.len() - 1 {
-                        self.directories.swap(index, index + 1);
+                    if index < self.items.len() - 1 {
+                        self.items.swap(index, index + 1);
                     }
                 }
             }
@@ -186,7 +163,7 @@ impl EditableFileTree {
     }
 
     pub fn get_sorting_strategies(&self) -> Vec<SortingStrategy> {
-        self.directories
+        self.items
             .iter()
             .filter_map(|dir| dir.strategy.clone())
             .collect()
