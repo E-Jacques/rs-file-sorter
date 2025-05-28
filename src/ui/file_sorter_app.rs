@@ -8,13 +8,13 @@ use crate::{
     utils::logger::Logger,
 };
 
-use super::widgets::{directory_input, editable_file_tree};
+use super::widgets::{directory_input, editable_tree};
 
 pub struct FileSorterApp {
     input_path: String,
     output_path: String,
     sorting_strategies: Vec<SortingStrategy>,
-    editable_file_tree: editable_file_tree::EditableFileTree,
+    editable_file_tree: editable_tree::editable_tree::EditableTree,
     directory_input: directory_input::DirectoryInput,
     directory_output: directory_input::DirectoryInput,
 }
@@ -23,7 +23,7 @@ pub struct FileSorterApp {
 pub enum Message {
     InputPathChanged(directory_input::DirectoryInputMessage),
     OutputPathChanged(directory_input::DirectoryInputMessage),
-    EditableFileTreeMessage(editable_file_tree::Message),
+    EditableFileTreeMessage(editable_tree::editable_tree::Message),
     Sort,
 }
 
@@ -39,7 +39,7 @@ impl FileSorterApp {
             input_path: String::new(),
             output_path: String::new(),
             sorting_strategies: vec![],
-            editable_file_tree: editable_file_tree::EditableFileTree::default(),
+            editable_file_tree: editable_tree::editable_tree::EditableTree::default(),
             directory_input: directory_input::DirectoryInput::new(
                 None,
                 Some(String::from("Input path")),
