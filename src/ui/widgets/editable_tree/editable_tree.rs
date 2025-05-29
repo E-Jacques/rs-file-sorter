@@ -1,6 +1,8 @@
+use std::fmt::Debug;
+
 use iced::{
     border::Radius,
-    widget::{button, column, combo_box, container},
+    widget::{button, column, container},
     Border, Color, Element, Length,
 };
 
@@ -11,21 +13,31 @@ use crate::{
 };
 
 use super::{
-    editable_tree_item::{DirectoryMovement, EditableTreeItem, Message as ItemMessage},
-    shared::StrategyOptions,
+    default_editable_tree_item::{
+        DefaultEditableTreeItem, DirectoryMovement, Message as ItemMessage,
+    },
+    shared::TreeItem,
 };
 
 #[derive(Debug, Clone)]
 pub struct EditableTree {
     items: Vec<Directory>,
-    strategies_options: StrategyOptions,
     strategies_list: Vec<SortingStrategy>,
 }
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Directory {
     id: String,
-    element: EditableTreeItem,
-    strategy: Option<SortingStrategy>,
+    element: Box<dyn TreeItem<ItemMessage>>,
+}
+
+// Manual Clone implementation for Directory
+impl Clone for Directory {
+    fn clone(&self) -> Self {
+        Directory {
+            id: self.id.clone(),
+            element: self.element.box_clone(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -42,30 +54,23 @@ impl Default for EditableTree {
 
 impl EditableTree {
     fn new() -> Self {
-        let strategy_list: Vec<SortingStrategy> =
+        let strategies_list: Vec<SortingStrategy> =
             vec![get_month_sorting_strategy(), get_year_sorting_strategy()];
         EditableTree {
             items: vec![],
-            strategies_options: combo_box::State::new(
-                strategy_list
-                    .iter()
-                    .map(|s| s.name.clone())
-                    .collect::<Vec<String>>(),
-            ),
-            strategies_list: strategy_list,
+            strategies_list,
         }
     }
 
     fn add_directory(&mut self) {
         let new_directory = Directory {
             id: random_string(10),
-            element: EditableTreeItem::new(self.strategies_options.clone()),
-            strategy: None,
+            element: Box::new(DefaultEditableTreeItem::new(self.strategies_list.clone())),
         };
         self.items.push(new_directory);
     }
 
-    fn remove_directory(&mut self, id: String) {
+    fn remove_item(&mut self, id: String) {
         // Remove directory logic
         if let Some(index) = self.items.iter().position(|dir| dir.id == id) {
             self.items.remove(index);
@@ -120,31 +125,17 @@ impl EditableTree {
 
                 // react on the parent side
                 match item_message {
-                    ItemMessage::DirectoryRemoved => self.remove_directory(id),
+                    ItemMessage::DirectoryRemoved => self.remove_item(id),
                     ItemMessage::MoveDirectory(movement) => {
-                        self.move_directory(id, movement);
+                        self.move_item(id, movement);
                     }
-                    ItemMessage::StrategyChanged(name) => {
-                        self.change_directory_name(id, name.clone());
-                    }
+                    ItemMessage::StrategyChanged(_) => (),
                 }
             }
         }
     }
 
-    fn change_directory_name(&mut self, id: String, name: String) {
-        if let Some(dir) = self.items.iter_mut().find(|dir| dir.id == id) {
-            if let Some(strategy) = self.strategies_list.iter().find(|s| s.name == name) {
-                dir.strategy = Some(strategy.clone());
-            } else {
-                println!("Strategy already set for directory {}", dir.id);
-            }
-        } else {
-            println!("Directory with id {} not found", id);
-        }
-    }
-
-    fn move_directory(&mut self, id: String, movement: DirectoryMovement) {
+    fn move_item(&mut self, id: String, movement: DirectoryMovement) {
         let index = self.items.iter().position(|dir| dir.id == id);
         if let Some(index) = index {
             match movement {
@@ -165,7 +156,7 @@ impl EditableTree {
     pub fn get_sorting_strategies(&self) -> Vec<SortingStrategy> {
         self.items
             .iter()
-            .filter_map(|dir| dir.strategy.clone())
+            .filter_map(|dir| dir.element.get_sorting_strategy())
             .collect()
     }
 }
