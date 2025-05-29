@@ -1,16 +1,17 @@
 use iced::{
-    widget::{button, combo_box, row},
+    widget::{button, combo_box, row, ComboBox},
     Element, Length,
 };
 
-use crate::ui::widgets::icon;
+use crate::{core::sorting_strategy::SortingStrategy, ui::widgets::icon};
 
-use super::shared::StrategyOptions;
+use super::shared::{StrategyOptions, TreeItem};
 
 #[derive(Debug, Clone)]
-pub struct EditableTreeItem {
+pub struct DefaultEditableTreeItem {
     selected_strategy: Option<String>,
     strategy_options: StrategyOptions,
+    strategy_list: Vec<SortingStrategy>,
 }
 
 #[derive(Debug, Clone)]
@@ -26,15 +27,24 @@ pub enum Message {
     MoveDirectory(DirectoryMovement),
 }
 
-impl EditableTreeItem {
-    pub fn new(strategy_options: StrategyOptions) -> Self {
-        EditableTreeItem {
+impl DefaultEditableTreeItem {
+    pub fn new(strategy_list: Vec<SortingStrategy>) -> Self {
+        let strategy_options = combo_box::State::new(
+            strategy_list
+                .iter()
+                .map(|s| s.name.clone())
+                .collect::<Vec<String>>(),
+        );
+        DefaultEditableTreeItem {
             selected_strategy: None,
-            strategy_options: strategy_options,
+            strategy_list,
+            strategy_options,
         }
     }
+}
 
-    pub fn view(&self) -> Element<'_, Message> {
+impl TreeItem<Message> for DefaultEditableTreeItem {
+    fn view(&self) -> Element<'_, Message> {
         let delete_btn: Element<'_, Message> = button(icon::icon(icon::DELETE))
             .on_press(Message::DirectoryRemoved)
             .into();
@@ -45,12 +55,13 @@ impl EditableTreeItem {
             .on_press(Message::MoveDirectory(DirectoryMovement::Down))
             .into();
 
-        let strategy_name_input = combo_box(
+        let strategy_name_input: Element<'_, Message> = ComboBox::new(
             &self.strategy_options,
             "Select a strategy",
             self.selected_strategy.as_ref(),
             move |selected_strategy| Message::StrategyChanged(selected_strategy),
-        );
+        )
+        .into();
 
         row![strategy_name_input, delete_btn, up_btn, down_btn]
             .spacing(10)
@@ -58,7 +69,7 @@ impl EditableTreeItem {
             .into()
     }
 
-    pub fn update(&mut self, message: Message) {
+    fn update(&mut self, message: Message) {
         match message {
             Message::DirectoryRemoved => (),
             Message::StrategyChanged(strategy) => {
@@ -66,5 +77,24 @@ impl EditableTreeItem {
             }
             Message::MoveDirectory(_) => (),
         }
+    }
+
+    fn get_sorting_strategy(&self) -> Option<SortingStrategy> {
+        match self.selected_strategy.clone() {
+            Some(selected_strategy) => self
+                .strategy_list
+                .iter()
+                .find(|strategy| strategy.name == selected_strategy)
+                .cloned(),
+            None => None,
+        }
+    }
+
+    fn box_clone(&self) -> Box<dyn TreeItem<Message>> {
+        Box::new(Self {
+            selected_strategy: self.selected_strategy.clone(),
+            strategy_list: self.strategy_list.clone(),
+            strategy_options: self.strategy_options.clone(),
+        })
     }
 }

@@ -67,17 +67,17 @@ impl FileSorterApp {
         let input_path = self
             .directory_input
             .view()
-            .map(move |msg| Message::InputPathChanged(msg));
+            .map(|msg| Message::InputPathChanged(msg));
 
         let output_path = self
             .directory_output
             .view()
-            .map(move |msg| Message::OutputPathChanged(msg));
+            .map(|msg| Message::OutputPathChanged(msg));
 
         let output_path_tree = self
             .editable_file_tree
             .view()
-            .map(move |msg| Message::EditableFileTreeMessage(msg));
+            .map(|msg| Message::EditableFileTreeMessage(msg));
 
         let sort_button = button("Sort").on_press(Message::Sort).width(Length::Fill);
 
@@ -94,6 +94,8 @@ impl FileSorterApp {
     pub fn update(&mut self, message: Message) {
         match message {
             Message::Sort => {
+                let strategies = self.editable_file_tree.get_sorting_strategies();
+                self.sorting_strategies = strategies;
                 self.sort();
             }
             Message::InputPathChanged(message) => {
@@ -114,8 +116,6 @@ impl FileSorterApp {
             }
             Message::EditableFileTreeMessage(m) => {
                 self.editable_file_tree.update(m);
-                let strategies = self.editable_file_tree.get_sorting_strategies();
-                self.sorting_strategies = strategies;
             }
         }
     }
