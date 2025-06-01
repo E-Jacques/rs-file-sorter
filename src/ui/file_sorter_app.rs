@@ -23,7 +23,7 @@ pub struct FileSorterApp {
 pub enum Message {
     InputPathChanged(directory_input::DirectoryInputMessage),
     OutputPathChanged(directory_input::DirectoryInputMessage),
-    EditableFileTreeMessage(editable_tree::editable_tree::Message),
+    EditableFileTreeMessage(editable_tree::shared::Message),
     Sort,
 }
 
