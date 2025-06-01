@@ -5,26 +5,13 @@ use iced::{
 
 use crate::{core::sorting_strategy::SortingStrategy, ui::widgets::icon};
 
-use super::shared::{StrategyOptions, TreeItem};
+use super::shared::{DirectoryMovement, ItemMessage, StrategyOptions, TreeItem};
 
 #[derive(Debug, Clone)]
 pub struct DefaultEditableTreeItem {
     selected_strategy: Option<String>,
     strategy_options: StrategyOptions,
     strategy_list: Vec<SortingStrategy>,
-}
-
-#[derive(Debug, Clone)]
-pub enum DirectoryMovement {
-    Up,
-    Down,
-}
-
-#[derive(Debug, Clone)]
-pub enum Message {
-    DirectoryRemoved,
-    StrategyChanged(String),
-    MoveDirectory(DirectoryMovement),
 }
 
 impl DefaultEditableTreeItem {
@@ -43,23 +30,23 @@ impl DefaultEditableTreeItem {
     }
 }
 
-impl TreeItem<Message> for DefaultEditableTreeItem {
-    fn view(&self) -> Element<'_, Message> {
-        let delete_btn: Element<'_, Message> = button(icon::icon(icon::DELETE))
-            .on_press(Message::DirectoryRemoved)
+impl TreeItem<ItemMessage> for DefaultEditableTreeItem {
+    fn view(&self) -> Element<'_, ItemMessage> {
+        let delete_btn: Element<'_, ItemMessage> = button(icon::icon(icon::DELETE))
+            .on_press(ItemMessage::DirectoryRemoved)
             .into();
-        let up_btn: Element<'_, Message> = button(icon::icon(icon::ARROW_UP))
-            .on_press(Message::MoveDirectory(DirectoryMovement::Up))
+        let up_btn: Element<'_, ItemMessage> = button(icon::icon(icon::ARROW_UP))
+            .on_press(ItemMessage::MoveDirectory(DirectoryMovement::Up))
             .into();
-        let down_btn: Element<'_, Message> = button(icon::icon(icon::ARROW_DOWN))
-            .on_press(Message::MoveDirectory(DirectoryMovement::Down))
+        let down_btn: Element<'_, ItemMessage> = button(icon::icon(icon::ARROW_DOWN))
+            .on_press(ItemMessage::MoveDirectory(DirectoryMovement::Down))
             .into();
 
-        let strategy_name_input: Element<'_, Message> = ComboBox::new(
+        let strategy_name_input: Element<'_, ItemMessage> = ComboBox::new(
             &self.strategy_options,
             "Select a strategy",
             self.selected_strategy.as_ref(),
-            move |selected_strategy| Message::StrategyChanged(selected_strategy),
+            move |selected_strategy| ItemMessage::StrategyChanged(selected_strategy),
         )
         .into();
 
@@ -69,13 +56,14 @@ impl TreeItem<Message> for DefaultEditableTreeItem {
             .into()
     }
 
-    fn update(&mut self, message: Message) {
+    fn update(&mut self, message: ItemMessage) {
         match message {
-            Message::DirectoryRemoved => (),
-            Message::StrategyChanged(strategy) => {
+            ItemMessage::DirectoryRemoved => (),
+            ItemMessage::StrategyChanged(strategy) => {
                 self.selected_strategy = Some(strategy);
             }
-            Message::MoveDirectory(_) => (),
+            ItemMessage::MoveDirectory(_) => (),
+            ItemMessage::NestedEditableTreeMessage(_) => (),
         }
     }
 
@@ -90,7 +78,7 @@ impl TreeItem<Message> for DefaultEditableTreeItem {
         }
     }
 
-    fn box_clone(&self) -> Box<dyn TreeItem<Message>> {
+    fn box_clone(&self) -> Box<dyn TreeItem<ItemMessage>> {
         Box::new(Self {
             selected_strategy: self.selected_strategy.clone(),
             strategy_list: self.strategy_list.clone(),
