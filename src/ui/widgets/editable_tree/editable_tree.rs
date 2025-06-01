@@ -8,15 +8,16 @@ use iced::{
 
 use crate::{
     core::sorting_strategy::SortingStrategy,
-    sorting_strategies::{get_month_sorting_strategy, get_year_sorting_strategy},
+    sorting_strategies::{
+        concat_strategy::concat_strategy, get_month_sorting_strategy, get_year_sorting_strategy,
+    },
     utils::string_manipulator::random_string,
 };
 
 use super::{
-    default_editable_tree_item::{
-        DefaultEditableTreeItem, DirectoryMovement, Message as ItemMessage,
-    },
-    shared::TreeItem,
+    default_editable_tree_item::DefaultEditableTreeItem,
+    nested_editable_tree_item::NestedEditableTreeItem,
+    shared::{DirectoryMovement, ItemMessage, Message, TreeItem},
 };
 
 #[derive(Debug, Clone)]
@@ -40,12 +41,6 @@ impl Clone for Directory {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum Message {
-    DirectoryAdded,
-    ItemEvent(String, ItemMessage),
-}
-
 impl Default for EditableTree {
     fn default() -> Self {
         EditableTree::new()
@@ -54,8 +49,11 @@ impl Default for EditableTree {
 
 impl EditableTree {
     fn new() -> Self {
-        let strategies_list: Vec<SortingStrategy> =
-            vec![get_month_sorting_strategy(), get_year_sorting_strategy()];
+        let strategies_list: Vec<SortingStrategy> = vec![
+            get_month_sorting_strategy(),
+            get_year_sorting_strategy(),
+            concat_strategy(vec![]),
+        ];
         EditableTree {
             items: vec![],
             strategies_list,
@@ -115,24 +113,41 @@ impl EditableTree {
         match message {
             Message::DirectoryAdded => self.add_directory(),
             Message::ItemEvent(id, item_message) => {
+                // react on the parent side
+                match item_message.clone() {
+                    ItemMessage::DirectoryRemoved => self.remove_item(id.clone()),
+                    ItemMessage::MoveDirectory(movement) => {
+                        self.move_item(id.clone(), movement);
+                    }
+                    ItemMessage::StrategyChanged(strategy_name) => {
+                        self.on_strategy_changed(id.clone(), strategy_name);
+                    }
+                    ItemMessage::NestedEditableTreeMessage(_) => (),
+                }
+
                 // update the related item element
                 self.items
                     .iter_mut()
                     .find(|item| item.id == id)
                     .unwrap()
                     .element
-                    .update(item_message.clone());
-
-                // react on the parent side
-                match item_message {
-                    ItemMessage::DirectoryRemoved => self.remove_item(id),
-                    ItemMessage::MoveDirectory(movement) => {
-                        self.move_item(id, movement);
-                    }
-                    ItemMessage::StrategyChanged(_) => (),
-                }
+                    .update(item_message);
             }
         }
+    }
+
+    fn on_strategy_changed(&mut self, item_id: String, new_strategy_name: String) {
+        let new_element: Box<dyn TreeItem<ItemMessage>> = if new_strategy_name == "concat" {
+            Box::new(NestedEditableTreeItem::new(self.strategies_list.clone()))
+        } else {
+            Box::new(DefaultEditableTreeItem::new(self.strategies_list.clone()))
+        };
+        let targeted_directory = self
+            .items
+            .iter_mut()
+            .find(|item| item.id == item_id)
+            .unwrap();
+        targeted_directory.element = new_element;
     }
 
     fn move_item(&mut self, id: String, movement: DirectoryMovement) {
