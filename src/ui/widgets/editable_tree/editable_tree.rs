@@ -52,7 +52,7 @@ impl EditableTree {
         let strategies_list: Vec<SortingStrategy> = vec![
             get_month_sorting_strategy(),
             get_year_sorting_strategy(),
-            concat_strategy(vec![]),
+            concat_strategy(),
         ];
         EditableTree {
             items: vec![],

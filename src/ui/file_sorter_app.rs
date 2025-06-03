@@ -94,8 +94,7 @@ impl FileSorterApp {
     pub fn update(&mut self, message: Message) {
         match message {
             Message::Sort => {
-                let strategies = self.editable_file_tree.get_sorting_strategies();
-                self.sorting_strategies = strategies;
+                self.sorting_strategies = self.editable_file_tree.get_sorting_strategies();
                 self.sort();
             }
             Message::InputPathChanged(message) => {
