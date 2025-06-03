@@ -3,9 +3,7 @@ use iced::{
     Element,
 };
 
-use crate::{
-    core::sorting_strategy::SortingStrategy, sorting_strategies::concat_strategy::concat_strategy,
-};
+use crate::core::sorting_strategy::{SortingStrategy, StrategyParameter};
 
 use super::{
     default_editable_tree_item::DefaultEditableTreeItem,
@@ -58,7 +56,9 @@ impl TreeItem<ItemMessage> for NestedEditableTreeItem {
 
         match item_message {
             ItemMessage::DirectoryRemoved => (),
-            ItemMessage::StrategyChanged(_) => (),
+            ItemMessage::StrategyChanged(strategy) => {
+                self.selected_strategy = Some(strategy);
+            }
             ItemMessage::MoveDirectory(_) => (),
             ItemMessage::NestedEditableTreeMessage(nested_message) => {
                 self.editable_tree.update(*nested_message.clone());
@@ -80,11 +80,27 @@ impl TreeItem<ItemMessage> for NestedEditableTreeItem {
         match self.selected_strategy.clone() {
             None => None,
             Some(strategy_name) => {
-                if strategy_name == "concat" {
-                    let nested_sorting_strategies = self.editable_tree.get_sorting_strategies();
-                    Some(concat_strategy(nested_sorting_strategies))
-                } else {
-                    None
+                // find associated strategy
+                match self
+                    .strategy_list
+                    .clone()
+                    .iter_mut()
+                    .find(|strategy| strategy_name == strategy.name)
+                {
+                    None => None,
+                    Some(strategy) => {
+                        strategy.add_parameter(
+                            "strategies".to_string(),
+                            StrategyParameter::Strategy(
+                                self.editable_tree
+                                    .get_sorting_strategies()
+                                    .iter()
+                                    .map(|strategy| Box::new(strategy.clone()))
+                                    .collect(),
+                            ),
+                        );
+                        Some(strategy.to_owned())
+                    }
                 }
             }
         }
