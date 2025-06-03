@@ -1,18 +1,23 @@
-use std::fs::File;
+use std::{collections::HashMap, fs::File};
 
-use crate::core::sorting_strategy::SortingStrategy;
+use crate::core::sorting_strategy::{SortingStrategy, StrategyParameter};
 
-pub fn concat_strategy(strategies: Vec<SortingStrategy>) -> SortingStrategy {
-    let borrowed_strategies: Vec<SortingStrategy> = strategies.clone();
+pub fn concat_strategy() -> SortingStrategy {
     SortingStrategy::new(
         "concat",
-        Box::new(move |f: &File| {
+        move |f: &File, parameters: &HashMap<String, StrategyParameter>| {
             let mut result = String::new();
-            for strategy in &borrowed_strategies {
-                let action = &strategy.action;
-                result.push_str(&action(f));
+
+            let strategies = parameters.get("strategies").unwrap();
+            match strategies {
+                StrategyParameter::Strategy(strategies) => {
+                    for strategy in strategies {
+                        let action = &strategy.action;
+                        result.push_str(&action(f, &strategy.parameters));
+                    }
+                }
             }
             result
-        }),
+        },
     )
 }
