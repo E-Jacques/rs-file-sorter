@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub fn get_manipulation_catalog() -> StrategyCatalog {
-    StrategyCatalog::from(vec![get_concat_strategy()])
+    StrategyCatalog::from(vec![get_concat_strategy(), get_text_strategy()])
 }
 
 fn get_concat_strategy() -> SortingStrategy {
@@ -23,6 +23,25 @@ fn get_concat_strategy() -> SortingStrategy {
                         result.push_str(&action(f, &strategy.parameters));
                     }
                 }
+                _ => (),
+            }
+            result
+        },
+    )
+}
+
+fn get_text_strategy() -> SortingStrategy {
+    SortingStrategy::new(
+        "text",
+        move |_: &File, parameters: &HashMap<String, StrategyParameter>| {
+            let mut result = String::new();
+
+            let strategies = parameters.get("value").unwrap();
+            match strategies {
+                StrategyParameter::SingleString(value) => {
+                    result = value.clone();
+                }
+                _ => (),
             }
             result
         },
