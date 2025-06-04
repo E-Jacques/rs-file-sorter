@@ -7,6 +7,7 @@ type SortingStrategyAction = fn(&File, &HashMap<String, StrategyParameter>) -> S
 #[derive(Clone)]
 pub enum StrategyParameter {
     Strategy(Vec<Box<SortingStrategy>>),
+    SingleString(String),
 }
 
 #[derive(Clone)]
