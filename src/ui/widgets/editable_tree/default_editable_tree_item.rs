@@ -3,7 +3,10 @@ use iced::{
     Element, Length,
 };
 
-use crate::{core::sorting_strategy::SortingStrategy, ui::widgets::icon};
+use crate::{
+    core::sorting_strategy::SortingStrategy, sorting_strategies::strategy_catalog::StrategyCatalog,
+    ui::widgets::icon,
+};
 
 use super::shared::{DirectoryMovement, ItemMessage, StrategyOptions, TreeItem};
 
@@ -11,20 +14,15 @@ use super::shared::{DirectoryMovement, ItemMessage, StrategyOptions, TreeItem};
 pub struct DefaultEditableTreeItem {
     selected_strategy: Option<String>,
     strategy_options: StrategyOptions,
-    strategy_list: Vec<SortingStrategy>,
+    strategy_catalog: StrategyCatalog,
 }
 
 impl DefaultEditableTreeItem {
-    pub fn new(strategy_list: Vec<SortingStrategy>) -> Self {
-        let strategy_options = combo_box::State::new(
-            strategy_list
-                .iter()
-                .map(|s| s.name.clone())
-                .collect::<Vec<String>>(),
-        );
+    pub fn new(strategy_catalog: StrategyCatalog) -> Self {
+        let strategy_options = combo_box::State::new(strategy_catalog.get_names());
         DefaultEditableTreeItem {
             selected_strategy: None,
-            strategy_list,
+            strategy_catalog,
             strategy_options,
         }
     }
@@ -58,30 +56,23 @@ impl TreeItem<ItemMessage> for DefaultEditableTreeItem {
 
     fn update(&mut self, message: ItemMessage) {
         match message {
-            ItemMessage::DirectoryRemoved => (),
             ItemMessage::StrategyChanged(strategy) => {
                 self.selected_strategy = Some(strategy);
             }
-            ItemMessage::MoveDirectory(_) => (),
-            ItemMessage::NestedEditableTreeMessage(_) => (),
+            _ => (),
         }
     }
 
     fn get_sorting_strategy(&self) -> Option<SortingStrategy> {
-        match self.selected_strategy.clone() {
-            Some(selected_strategy) => self
-                .strategy_list
-                .iter()
-                .find(|strategy| strategy.name == selected_strategy)
-                .cloned(),
-            None => None,
-        }
+        self.selected_strategy
+            .as_ref()
+            .and_then(|name| self.strategy_catalog.get_strategy(name))
     }
 
     fn box_clone(&self) -> Box<dyn TreeItem<ItemMessage>> {
         Box::new(Self {
             selected_strategy: self.selected_strategy.clone(),
-            strategy_list: self.strategy_list.clone(),
+            strategy_catalog: self.strategy_catalog.clone(),
             strategy_options: self.strategy_options.clone(),
         })
     }
