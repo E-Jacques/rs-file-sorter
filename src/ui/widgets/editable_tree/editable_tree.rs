@@ -7,10 +7,7 @@ use iced::{
 };
 
 use crate::{
-    core::sorting_strategy::SortingStrategy,
-    sorting_strategies::{
-        concat_strategy::concat_strategy, get_month_sorting_strategy, get_year_sorting_strategy,
-    },
+    core::sorting_strategy::SortingStrategy, sorting_strategies::strategy_catalog::StrategyCatalog,
     utils::string_manipulator::random_string,
 };
 
@@ -23,7 +20,7 @@ use super::{
 #[derive(Debug, Clone)]
 pub struct EditableTree {
     items: Vec<Directory>,
-    strategies_list: Vec<SortingStrategy>,
+    strategy_catalog: StrategyCatalog,
 }
 #[derive(Debug)]
 struct Directory {
@@ -43,27 +40,22 @@ impl Clone for Directory {
 
 impl Default for EditableTree {
     fn default() -> Self {
-        EditableTree::new()
+        EditableTree::new(StrategyCatalog::default())
     }
 }
 
 impl EditableTree {
-    fn new() -> Self {
-        let strategies_list: Vec<SortingStrategy> = vec![
-            get_month_sorting_strategy(),
-            get_year_sorting_strategy(),
-            concat_strategy(),
-        ];
+    pub fn new(strategy_catalog: StrategyCatalog) -> Self {
         EditableTree {
             items: vec![],
-            strategies_list,
+            strategy_catalog,
         }
     }
 
     fn add_directory(&mut self) {
         let new_directory = Directory {
             id: random_string(10),
-            element: Box::new(DefaultEditableTreeItem::new(self.strategies_list.clone())),
+            element: Box::new(DefaultEditableTreeItem::new(self.strategy_catalog.clone())),
         };
         self.items.push(new_directory);
     }
@@ -138,9 +130,9 @@ impl EditableTree {
 
     fn on_strategy_changed(&mut self, item_id: String, new_strategy_name: String) {
         let new_element: Box<dyn TreeItem<ItemMessage>> = if new_strategy_name == "concat" {
-            Box::new(NestedEditableTreeItem::new(self.strategies_list.clone()))
+            Box::new(NestedEditableTreeItem::new(self.strategy_catalog.clone()))
         } else {
-            Box::new(DefaultEditableTreeItem::new(self.strategies_list.clone()))
+            Box::new(DefaultEditableTreeItem::new(self.strategy_catalog.clone()))
         };
         let targeted_directory = self
             .items
