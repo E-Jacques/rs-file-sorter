@@ -33,7 +33,7 @@ mod parser_tests {
     #[should_panic(expected = "[Cli Parser] Expect to receive non-empty command input.")]
     fn test_parser_no_command_panic() {
         let command_handler = get_handler_for_expected_args(vec![]);
-        parse_cli(vec![], &command_handler, String::from(""));
+        let _ = parse_cli(vec![], &command_handler, String::from(""));
     }
 
     #[test]
