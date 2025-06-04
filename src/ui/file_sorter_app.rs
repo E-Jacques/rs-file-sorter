@@ -5,6 +5,9 @@ use iced::{
 
 use crate::{
     core::{sorter, sorting_strategy::SortingStrategy},
+    sorting_strategies::{
+        manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
+    },
     utils::logger::Logger,
 };
 
@@ -39,7 +42,9 @@ impl FileSorterApp {
             input_path: String::new(),
             output_path: String::new(),
             sorting_strategies: vec![],
-            editable_file_tree: editable_tree::editable_tree::EditableTree::default(),
+            editable_file_tree: editable_tree::editable_tree::EditableTree::new(
+                get_metadata_catalog().with(&get_manipulation_catalog()),
+            ),
             directory_input: directory_input::DirectoryInput::new(
                 None,
                 Some(String::from("Input path")),
