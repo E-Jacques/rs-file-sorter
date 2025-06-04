@@ -293,7 +293,7 @@ mod tests {
             String::from("to"),
             String::from("--stack"),
             String::from("images"),
-            String::from("--sub-stack"),
+            String::from("--strategy"),
             String::from("png"),
         ];
         let command_handler = CliHandlerCommand {
@@ -305,7 +305,7 @@ mod tests {
                     parent_name: None,
                 },
                 ArgBuilder {
-                    name: String::from("sub-stack"),
+                    name: String::from("strategy"),
                     description: String::from("associate a sorting rule with the previous combined stack."),
                     expected_value_type: vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
                     parent_name: Some(String::from("stack")),
@@ -348,7 +348,7 @@ mod tests {
                         parent_name: None,
                     },
                     ArgBuilder {
-                            name: String::from("sub-stack"),
+                            name: String::from("strategy"),
                             description: String::from("associate a sorting rule with the previous combined stack."),
                             expected_value_type: vec![ArgValueTypes::Single, ArgValueTypes::Multiple],
                             parent_name: Some(String::from("stack")),
@@ -369,14 +369,14 @@ mod tests {
                     }),
                 },
                 ParsedArgs {
-                    arg_name: String::from("sub-stack"),
+                    arg_name: String::from("strategy"),
                     arg_value: ArgValue::Single(ArgDatum {
                         value: Some(String::from("png")),
                         child_args: vec![],
                     }),
                 },
                 ParsedArgs {
-                    arg_name: String::from("sub-stack"),
+                    arg_name: String::from("strategy"),
                     arg_value: ArgValue::Single(ArgDatum {
                         value: Some(String::from("jpg")),
                         child_args: vec![],
@@ -390,7 +390,7 @@ mod tests {
                     }),
                 },
                 ParsedArgs {
-                    arg_name: String::from("sub-stack"),
+                    arg_name: String::from("strategy"),
                     arg_value: ArgValue::Single(ArgDatum {
                         value: Some(String::from("arg-2")),
                         child_args: vec![],
@@ -407,14 +407,14 @@ mod tests {
                     value: Some(String::from("images")),
                     child_args: vec![
                         ParsedArgs {
-                            arg_name: String::from("sub-stack"),
+                            arg_name: String::from("strategy"),
                             arg_value: ArgValue::Single(ArgDatum {
                                 value: Some(String::from("png")),
                                 child_args: vec![]
                             })
                         },
                         ParsedArgs {
-                            arg_name: String::from("sub-stack"),
+                            arg_name: String::from("strategy"),
                             arg_value: ArgValue::Single(ArgDatum {
                                 value: Some(String::from("jpg")),
                                 child_args: vec![]
@@ -428,7 +428,7 @@ mod tests {
                 ArgValue::Single(ArgDatum {
                     value: Some(String::from("arg-1")),
                     child_args: vec![ParsedArgs {
-                        arg_name: String::from("sub-stack"),
+                        arg_name: String::from("strategy"),
                         arg_value: ArgValue::Single(ArgDatum {
                             value: Some(String::from("arg-2")),
                             child_args: vec![]
