@@ -4,7 +4,7 @@ use iced::{
 };
 
 use crate::{
-    core::sorting_strategy::{SortingStrategy, StrategyParameter},
+    core::{sorting_strategy::SortingStrategy, strategy_parameter::StrategyParameter},
     sorting_strategies::strategy_catalog::StrategyCatalog,
 };
 

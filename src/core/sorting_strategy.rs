@@ -2,13 +2,9 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::sync::{Arc, Mutex};
 
-type SortingStrategyAction = fn(&File, &HashMap<String, StrategyParameter>) -> String;
+use crate::core::strategy_parameter::StrategyParameter;
 
-#[derive(Clone)]
-pub enum StrategyParameter {
-    Strategy(Vec<Box<SortingStrategy>>),
-    SingleString(String),
-}
+type SortingStrategyAction = fn(&File, &HashMap<String, StrategyParameter>) -> String;
 
 #[derive(Clone)]
 pub struct SortingStrategy {
