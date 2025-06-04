@@ -8,7 +8,10 @@ use crate::{
         sorter::sorter,
         sorting_strategy::{SortingStrategy, StrategyParameter},
     },
-    sorting_strategies::{get_month_sorting_strategy, get_year_sorting_strategy},
+    sorting_strategies::{
+        manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
+        strategy_catalog::StrategyCatalog,
+    },
     utils::{
         file_manipulator::{to_absolute_path, to_relative_path},
         logger::Logger,
@@ -57,7 +60,8 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
         ))
     }
 
-    let sorting_strategies_list = vec![get_month_sorting_strategy(), get_year_sorting_strategy()];
+    let sorting_strategies_list: StrategyCatalog =
+        get_metadata_catalog().with(&get_manipulation_catalog());
 
     let stack_arg_name = String::from("stack");
     let default_stack_parsed_args = ParsedArgs {
@@ -96,72 +100,58 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
         &rename_error_handler.clone(),
     )
 }
-
 fn get_storting_strategies(
     stacks: Vec<ArgDatum>,
-    sorting_strategies_list: Vec<SortingStrategy>,
+    strategy_catalog: StrategyCatalog,
     logger: &Logger,
 ) -> Vec<SortingStrategy> {
-    let all_sorting_strategies_string = sorting_strategies_list
-        .iter()
-        .map(|v| v.name.clone())
-        .collect::<Vec<String>>()
-        .join(", ");
-    let sorting_strategies = stacks
+    let all_strategy_names = strategy_catalog.get_names().join(", ");
+
+    stacks
         .into_iter()
-        .map(|arg_datum| match arg_datum.value {
-            None => {
-                logger.error("a value needs to be assigned to the stack argument.");
+        .map(|arg_datum| {
+            let name = arg_datum.value.as_ref().unwrap_or_else(|| {
+                logger.error("A value needs to be assigned to the stack argument.");
                 panic!();
-            }
-            Some(name) => match sorting_strategies_list
-                .clone()
-                .iter_mut()
-                .find(|value| value.name == name)
+            });
+
+            let mut strategy = strategy_catalog.get_strategy(name).unwrap_or_else(|| {
+                logger.error(&format!(
+                    "Unexpected stack value. Got '{}', expected one of: {}.",
+                    name, all_strategy_names
+                ));
+                panic!();
+            });
+
+            if let Some(parsed_arg) = arg_datum
+                .child_args
+                .iter()
+                .find(|arg| arg.arg_name == "strategies")
             {
-                Some(output) => {
-                    match arg_datum
-                        .child_args
-                        .iter()
-                        .find(|parsed_args| parsed_args.arg_name == "strategies")
-                    {
-                        Some(parsed_arg) => {
-                            let child_strategies = match parsed_arg.arg_value.clone() {
-                                ArgValue::NotProvided => vec![],
-                                ArgValue::Multiple(arg_datums) => arg_datums,
-                                ArgValue::Single(arg_datum) => vec![arg_datum],
-                            }
-                            .iter()
-                            .map(|datum| {
-                                sorting_strategies_list
-                                    .iter()
-                                    .find(|v| v.name == datum.value.clone().unwrap_or_default())
-                            })
-                            .filter(|s| s.is_some())
-                            .map(|s| Box::new(s.unwrap().clone()))
-                            .collect();
-                            output.add_parameter(
-                                String::from("strategies"),
-                                StrategyParameter::Strategy(child_strategies),
-                            );
-                        }
-                        None => (),
-                    };
-                    output
+                let child_strategies = match &parsed_arg.arg_value {
+                    ArgValue::NotProvided => vec![],
+                    ArgValue::Multiple(datums) => datums.clone(),
+                    ArgValue::Single(datum) => vec![datum.clone()],
                 }
-                None => {
-                    logger.error(&format!(
-                        "unexpected stack value. Got {}, expected {}.",
-                        name,
-                        all_sorting_strategies_string.clone()
-                    ));
-                    panic!()
-                }
+                .into_iter()
+                .filter_map(|datum| {
+                    datum
+                        .value
+                        .as_ref()
+                        .and_then(|name| strategy_catalog.get_strategy(name))
+                        .map(|s| Box::new(s.clone()))
+                })
+                .collect();
+
+                strategy.add_parameter(
+                    "strategies".to_string(),
+                    StrategyParameter::Strategy(child_strategies),
+                );
             }
-            .clone(),
+
+            strategy
         })
-        .collect();
-    sorting_strategies
+        .collect()
 }
 
 #[cfg(test)]
@@ -212,7 +202,7 @@ mod tests_exec_sort_command_panics {
 
     #[test]
     #[should_panic(
-        expected = "[ERROR] [Sort Command] a value needs to be assigned to the stack argument."
+        expected = "[ERROR] [Sort Command] A value needs to be assigned to the stack argument."
     )]
     fn test_exec_sort_command_stack_argument_has_no_value() {
         exec_sort_command(
@@ -230,7 +220,7 @@ mod tests_exec_sort_command_panics {
 
     #[test]
     #[should_panic(
-        expected = "[ERROR] [Sort Command] unexpected stack value. Got unknown_stack, expected month, year."
+        expected = "[ERROR] [Sort Command] Unexpected stack value. Got 'unknown_stack', expected one of: month, year, concat."
     )]
     fn test_exec_sort_command_unexpected_stack_value() {
         exec_sort_command(
