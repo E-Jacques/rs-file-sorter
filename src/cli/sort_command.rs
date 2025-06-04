@@ -219,7 +219,7 @@ mod tests_exec_sort_command_panics {
 
     #[test]
     #[should_panic(
-        expected = "[ERROR] [Sort Command] Unexpected stack value. Got 'unknown_stack', expected one of: month, year, concat."
+        expected = "[ERROR] [Sort Command] Unexpected stack value. Got 'unknown_stack', expected one of: month, year, concat, text."
     )]
     fn test_exec_sort_command_unexpected_stack_value() {
         exec_sort_command(
