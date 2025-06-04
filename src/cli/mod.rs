@@ -24,7 +24,7 @@ pub fn handle(input: String, debug_mode: Option<bool>) {
         vec![ArgValueTypes::Single, ArgValueTypes::Multiple]
     )
     .linked_arg(
-        String::from("sub-stack"), 
+        String::from("strategy"), 
         String::from("associate a sorting rule with the previous combined stack."), 
         vec![ArgValueTypes::Single, ArgValueTypes::Multiple]
     )
