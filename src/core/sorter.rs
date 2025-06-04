@@ -22,7 +22,6 @@ pub fn sorter<'a>(
     let files_list = read_dir(input_dir).unwrap();
     files_list.for_each(|f| {
         let file_name = f.unwrap().file_name();
-        println!("sorter: {:?}", file_name);
         let full_filename = Path::new(input_dir).join(file_name.clone());
         let file = File::open(full_filename.clone()).unwrap();
 
@@ -30,17 +29,15 @@ pub fn sorter<'a>(
         new_output.push(output_dir);
         for strategy in &sorting_strategies {
             new_output.push(strategy.apply(&file));
-            println!("sorter: {:?} => {:?}", strategy.name, new_output);
         }
 
         let new_full_filename = new_output.join(file_name);
-        println!("sorter: {:?}", new_full_filename);
         match move_file(full_filename.clone(), new_full_filename.clone(), true) {
-            Ok(_) => (),
             Err(_) => rename_error_handler(
                 full_filename.clone().to_str().unwrap(),
                 new_full_filename.clone().to_str().unwrap(),
             ),
+            _ => (),
         };
     });
 }
