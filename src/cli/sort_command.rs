@@ -5,8 +5,7 @@ use rsft_utils::common::file_or_dir_exists;
 use crate::{
     cli::cli_handler::parser::ArgDatum,
     core::{
-        sorter::sorter,
-        sorting_strategy::{SortingStrategy, StrategyParameter},
+        sorter::sorter, sorting_strategy::SortingStrategy, strategy_parameter::StrategyParameter,
     },
     sorting_strategies::{
         manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
