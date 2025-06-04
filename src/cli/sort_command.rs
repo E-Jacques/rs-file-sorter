@@ -3,7 +3,11 @@ use std::fs::metadata;
 use rsft_utils::common::file_or_dir_exists;
 
 use crate::{
-    core::{sorter::sorter, sorting_strategy::SortingStrategy},
+    cli::cli_handler::parser::ArgDatum,
+    core::{
+        sorter::sorter,
+        sorting_strategy::{SortingStrategy, StrategyParameter},
+    },
     sorting_strategies::{get_month_sorting_strategy, get_year_sorting_strategy},
     utils::{
         file_manipulator::{to_absolute_path, to_relative_path},
@@ -74,17 +78,7 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
         ArgValue::Single(stack) => vec![stack],
     };
 
-    let stack_names: Vec<String> = stacks
-        .into_iter()
-        .map(|arg| match arg.value {
-            Some(stack_name) => stack_name,
-            None => {
-                logger.error("a value needs to be assigned to the stack argument.");
-                panic!();
-            }
-        })
-        .collect();
-    let sorting_strategies = get_storting_strategies(stack_names, sorting_strategies_list, &logger);
+    let sorting_strategies = get_storting_strategies(stacks, sorting_strategies_list, &logger);
 
     let logger_borrowed = &logger.clone();
     let rename_error_handler = |old_filename: &_, new_filename: &_| {
@@ -104,7 +98,7 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
 }
 
 fn get_storting_strategies(
-    stacks: Vec<String>,
+    stacks: Vec<ArgDatum>,
     sorting_strategies_list: Vec<SortingStrategy>,
     logger: &Logger,
 ) -> Vec<SortingStrategy> {
@@ -115,21 +109,56 @@ fn get_storting_strategies(
         .join(", ");
     let sorting_strategies = stacks
         .into_iter()
-        .map(|stack| {
-            match sorting_strategies_list
-                .iter()
-                .find(|value| value.name == stack)
+        .map(|arg_datum| match arg_datum.value {
+            None => {
+                logger.error("a value needs to be assigned to the stack argument.");
+                panic!();
+            }
+            Some(name) => match sorting_strategies_list
+                .clone()
+                .iter_mut()
+                .find(|value| value.name == name)
             {
-                Some(output) => output.clone(),
+                Some(output) => {
+                    match arg_datum
+                        .child_args
+                        .iter()
+                        .find(|parsed_args| parsed_args.arg_name == "strategies")
+                    {
+                        Some(parsed_arg) => {
+                            let child_strategies = match parsed_arg.arg_value.clone() {
+                                ArgValue::NotProvided => vec![],
+                                ArgValue::Multiple(arg_datums) => arg_datums,
+                                ArgValue::Single(arg_datum) => vec![arg_datum],
+                            }
+                            .iter()
+                            .map(|datum| {
+                                sorting_strategies_list
+                                    .iter()
+                                    .find(|v| v.name == datum.value.clone().unwrap_or_default())
+                            })
+                            .filter(|s| s.is_some())
+                            .map(|s| Box::new(s.unwrap().clone()))
+                            .collect();
+                            output.add_parameter(
+                                String::from("strategies"),
+                                StrategyParameter::Strategy(child_strategies),
+                            );
+                        }
+                        None => (),
+                    };
+                    output
+                }
                 None => {
                     logger.error(&format!(
                         "unexpected stack value. Got {}, expected {}.",
-                        stack,
+                        name,
                         all_sorting_strategies_string.clone()
                     ));
                     panic!()
                 }
             }
+            .clone(),
         })
         .collect();
     sorting_strategies
