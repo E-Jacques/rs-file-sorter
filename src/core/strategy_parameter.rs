@@ -1,7 +1,39 @@
+use std::fmt::Display;
+
 use crate::core::sorting_strategy::SortingStrategy;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum StrategyParameter {
     Strategy(Vec<Box<SortingStrategy>>),
     SingleString(String),
+}
+
+impl PartialEq for Box<SortingStrategy> {
+    fn eq(&self, other: &Self) -> bool {
+        *self.name == other.name && self.parameters == other.parameters
+    }
+}
+
+#[derive(Clone, Debug, Copy, PartialEq, PartialOrd)]
+pub enum StrategyParameterKind {
+    Strategy,
+    SingleString,
+}
+
+impl Display for StrategyParameterKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            StrategyParameterKind::Strategy => "strategy",
+            StrategyParameterKind::SingleString => "single string",
+        })
+    }
+}
+
+impl StrategyParameter {
+    pub fn kind(&self) -> StrategyParameterKind {
+        match self {
+            StrategyParameter::SingleString(_) => StrategyParameterKind::SingleString,
+            StrategyParameter::Strategy(_) => StrategyParameterKind::Strategy,
+        }
+    }
 }
