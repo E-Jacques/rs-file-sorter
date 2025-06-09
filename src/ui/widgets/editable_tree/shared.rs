@@ -1,15 +1,6 @@
-use iced::{widget::combo_box, Element};
-
-use crate::core::sorting_strategy::SortingStrategy;
+use iced::widget::combo_box;
 
 pub type StrategyOptions = combo_box::State<String>;
-
-pub trait TreeItem<M>: std::fmt::Debug {
-    fn view(&self) -> Element<'_, M>;
-    fn update(&mut self, msg: M);
-    fn box_clone(&self) -> Box<dyn TreeItem<M>>;
-    fn get_sorting_strategy(&self) -> Option<SortingStrategy>;
-}
 
 #[derive(Debug, Clone)]
 pub enum DirectoryMovement {
@@ -18,15 +9,25 @@ pub enum DirectoryMovement {
 }
 
 #[derive(Debug, Clone)]
-pub enum Message {
-    DirectoryAdded,
-    ItemEvent(String, ItemMessage),
+pub enum TreeMessage {
+    AddEmptyItem,
+    ItemEvent(String, TreeItemMessage),
+}
+#[derive(Debug, Clone)]
+pub enum TreeTextInputMessage {
+    ValueUpdate(String),
 }
 
 #[derive(Debug, Clone)]
-pub enum ItemMessage {
+pub enum TreeInputMessage {
+    EditableTree(TreeMessage),
+    TextInput(TreeTextInputMessage),
+}
+
+#[derive(Debug, Clone)]
+pub enum TreeItemMessage {
     DirectoryRemoved,
     StrategyChanged(String),
     MoveDirectory(DirectoryMovement),
-    NestedEditableTreeMessage(Box<Message>),
+    ParameterChanged(String, Box<TreeInputMessage>),
 }
