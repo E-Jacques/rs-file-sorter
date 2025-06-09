@@ -1,4 +1,4 @@
-pub mod default_editable_tree_item;
 pub mod editable_tree;
-pub mod nested_editable_tree_item;
+pub mod editable_tree_item;
+pub mod editable_tree_item_text_input;
 pub mod shared;

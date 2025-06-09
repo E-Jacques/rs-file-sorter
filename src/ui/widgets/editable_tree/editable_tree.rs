@@ -12,9 +12,8 @@ use crate::{
 };
 
 use super::{
-    default_editable_tree_item::DefaultEditableTreeItem,
-    nested_editable_tree_item::NestedEditableTreeItem,
-    shared::{DirectoryMovement, ItemMessage, Message, TreeItem},
+    editable_tree_item::EditableTreeItem,
+    shared::{DirectoryMovement, TreeItemMessage, TreeMessage},
 };
 
 #[derive(Debug, Clone)]
@@ -22,20 +21,11 @@ pub struct EditableTree {
     items: Vec<Directory>,
     strategy_catalog: StrategyCatalog,
 }
-#[derive(Debug)]
+
+#[derive(Debug, Clone)]
 struct Directory {
     id: String,
-    element: Box<dyn TreeItem<ItemMessage>>,
-}
-
-// Manual Clone implementation for Directory
-impl Clone for Directory {
-    fn clone(&self) -> Self {
-        Directory {
-            id: self.id.clone(),
-            element: self.element.box_clone(),
-        }
-    }
+    element: EditableTreeItem,
 }
 
 impl Default for EditableTree {
@@ -55,7 +45,7 @@ impl EditableTree {
     fn add_directory(&mut self) {
         let new_directory = Directory {
             id: random_string(10),
-            element: Box::new(DefaultEditableTreeItem::new(self.strategy_catalog.clone())),
+            element: EditableTreeItem::new(self.strategy_catalog.clone()),
         };
         self.items.push(new_directory);
     }
@@ -69,18 +59,18 @@ impl EditableTree {
         }
     }
 
-    pub fn view(&self) -> Element<'_, Message> {
+    pub fn view(&self) -> Element<'_, TreeMessage> {
         let columns = self
             .items
             .iter()
-            .map(|dir: &Directory| -> Element<'_, Message> {
+            .map(|dir: &Directory| -> Element<'_, TreeMessage> {
                 dir.element
                     .view()
-                    .map(move |item_message| Message::ItemEvent(dir.id.clone(), item_message))
+                    .map(move |item_message| TreeMessage::ItemEvent(dir.id.clone(), item_message))
             });
 
-        let add_directory_btn: Element<'_, Message> = button("Add Directory")
-            .on_press(Message::DirectoryAdded)
+        let add_directory_btn: Element<'_, TreeMessage> = button("Add Directory")
+            .on_press(TreeMessage::AddEmptyItem)
             .width(Length::Fill)
             .into();
         let content = column(columns.into_iter())
@@ -101,45 +91,25 @@ impl EditableTree {
             .into()
     }
 
-    pub fn update(&mut self, message: Message) {
+    pub fn update(&mut self, message: TreeMessage) {
         match message {
-            Message::DirectoryAdded => self.add_directory(),
-            Message::ItemEvent(id, item_message) => {
+            TreeMessage::AddEmptyItem => self.add_directory(),
+            TreeMessage::ItemEvent(id, item_message) => {
                 // react on the parent side
                 match item_message.clone() {
-                    ItemMessage::DirectoryRemoved => self.remove_item(id.clone()),
-                    ItemMessage::MoveDirectory(movement) => {
+                    TreeItemMessage::DirectoryRemoved => self.remove_item(id.clone()),
+                    TreeItemMessage::MoveDirectory(movement) => {
                         self.move_item(id.clone(), movement);
                     }
-                    ItemMessage::StrategyChanged(strategy_name) => {
-                        self.on_strategy_changed(id.clone(), strategy_name);
-                    }
-                    ItemMessage::NestedEditableTreeMessage(_) => (),
+                    _ => (),
                 }
 
-                // update the related item element
-                self.items
-                    .iter_mut()
-                    .find(|item| item.id == id)
-                    .unwrap()
-                    .element
-                    .update(item_message);
+                // Some of the operation made above could have destroyed the item
+                if let Some(directory) = self.items.iter_mut().find(|item| item.id == id) {
+                    directory.element.update(item_message);
+                }
             }
         }
-    }
-
-    fn on_strategy_changed(&mut self, item_id: String, new_strategy_name: String) {
-        let new_element: Box<dyn TreeItem<ItemMessage>> = if new_strategy_name == "concat" {
-            Box::new(NestedEditableTreeItem::new(self.strategy_catalog.clone()))
-        } else {
-            Box::new(DefaultEditableTreeItem::new(self.strategy_catalog.clone()))
-        };
-        let targeted_directory = self
-            .items
-            .iter_mut()
-            .find(|item| item.id == item_id)
-            .unwrap();
-        targeted_directory.element = new_element;
     }
 
     fn move_item(&mut self, id: String, movement: DirectoryMovement) {
