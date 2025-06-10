@@ -1,11 +1,14 @@
-use std::fs::metadata;
+use std::{collections::HashMap, fs::metadata};
 
 use rsft_utils::common::file_or_dir_exists;
 
 use crate::{
     cli::cli_handler::parser::ArgDatum,
     core::{
-        sorter::sorter, sorting_strategy::SortingStrategy, strategy_parameter::StrategyParameter,
+        sorter::sorter,
+        sorting_strategy::SortingStrategy,
+        strategy_parameter::{StrategyParameter, StrategyParameterKind},
+        strategy_validator::StrategyValidator,
     },
     sorting_strategies::{
         manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
@@ -18,6 +21,15 @@ use crate::{
 };
 
 use super::cli_handler::parser::{ArgValue, ParsedArgs};
+static PARAMETER_SEP: &'static str = "=";
+
+impl SortingStrategy {
+    pub fn get_validator(&self, name: &String) -> Option<&StrategyValidator> {
+        self.validators
+            .iter()
+            .find(|validator| validator.name == *name)
+    }
+}
 
 pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Logger) {
     if params.len() != 2 {
@@ -99,6 +111,7 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
         &rename_error_handler.clone(),
     )
 }
+
 fn get_storting_strategies(
     stacks: Vec<ArgDatum>,
     strategy_catalog: StrategyCatalog,
@@ -125,32 +138,76 @@ fn get_storting_strategies(
             if let Some(parsed_arg) = arg_datum
                 .child_args
                 .iter()
-                .find(|arg| arg.arg_name == "strategies")
+                .find(|arg| arg.arg_name == "parameter")
             {
-                let child_strategies = match &parsed_arg.arg_value {
-                    ArgValue::NotProvided => vec![],
-                    ArgValue::Multiple(datums) => datums.clone(),
-                    ArgValue::Single(datum) => vec![datum.clone()],
-                }
-                .into_iter()
-                .filter_map(|datum| {
-                    datum
-                        .value
-                        .as_ref()
-                        .and_then(|name| strategy_catalog.get_strategy(name))
-                        .map(|s| Box::new(s.clone()))
-                })
-                .collect();
+                let parameters = get_parameters_from_parsed_args(parsed_arg);
 
-                strategy.add_parameter(
-                    "strategies".to_string(),
-                    StrategyParameter::Strategy(child_strategies),
-                );
+                for (key, value) in parameters.iter() {
+                    let maybe_parameter_value = strategy.get_validator(key).and_then(|validator| {
+                        get_parameter_value(&strategy_catalog, validator, value)
+                    });
+
+                    if let Some(parameter_value) = maybe_parameter_value {
+                        strategy.add_parameter(key.to_string(), parameter_value);
+                    }
+                }
             }
 
             strategy
         })
         .collect()
+}
+
+fn get_parameter_value(
+    strategy_catalog: &StrategyCatalog,
+    validator: &StrategyValidator,
+    value: &Vec<String>,
+) -> Option<StrategyParameter> {
+    match validator.kind {
+        StrategyParameterKind::Strategy => {
+            let strategies: Vec<Box<SortingStrategy>> = value
+                .iter()
+                .map(|v| strategy_catalog.get_strategy(v))
+                .filter(Option::is_some)
+                .map(|s| Box::new(s.unwrap()))
+                .collect();
+            Some(StrategyParameter::Strategy(strategies))
+        }
+        StrategyParameterKind::SingleString => {
+            if let Some(last_value) = value.iter().last() {
+                Some(StrategyParameter::SingleString(last_value.to_string()))
+            } else {
+                None
+            }
+        }
+    }
+}
+
+fn get_parameters_from_parsed_args(parsed_arg: &ParsedArgs) -> HashMap<String, Vec<String>> {
+    let child_parameters = match &parsed_arg.arg_value {
+        ArgValue::NotProvided => vec![],
+        ArgValue::Multiple(datums) => datums.clone(),
+        ArgValue::Single(datum) => vec![datum.clone()],
+    };
+    let mut parameters: HashMap<String, Vec<String>> = HashMap::new();
+
+    child_parameters.iter().for_each(|param| {
+        if let Some(value) = &param.value {
+            let keyvalue = value.split(PARAMETER_SEP).collect::<Vec<&str>>();
+            let key = keyvalue[0].to_string();
+            let value = keyvalue[1].to_string();
+
+            match parameters.get_mut(&key.clone()) {
+                Some(param_mut) => {
+                    param_mut.push(value);
+                }
+                None => {
+                    parameters.insert(key, vec![value]);
+                }
+            }
+        }
+    });
+    parameters
 }
 
 #[cfg(test)]
