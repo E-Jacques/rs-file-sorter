@@ -10,3 +10,5 @@ tests/**/output_dir/**/*
 # We still need to track test files
 !tests/rsc/sort/test_4/input_dir/file
 !tests/rsc/sort/test_5/output_dir/file
+
+tarpaulin-report.html
