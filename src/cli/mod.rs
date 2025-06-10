@@ -1,7 +1,7 @@
 use cli_handler::cli_handler_builder::{ArgValueTypes, CliHandlerBuilder};
 use sort_command::exec_sort_command;
 
-use crate::utils::logger::Logger;
+use crate::{cli::sort_command::{PARAMETER, STACK}, utils::logger::Logger};
 
 mod cli_handler;
 pub mod sort_command;
@@ -19,12 +19,12 @@ pub fn handle(input: String, debug_mode: Option<bool>) {
         sort_command_logger
     )
     .argument(
-        String::from("stack"), 
+        STACK.to_string(), 
         String::from("rule that specify where to put the files. first specified element will be the first directory that you will met and so."), 
         vec![ArgValueTypes::Single, ArgValueTypes::Multiple]
     )
     .linked_arg(
-        String::from("parameter"), 
+        PARAMETER.to_string(), 
         String::from("associate a parameter the the parent stack using a 'KEY=VALUE' format."), 
         vec![ArgValueTypes::Single, ArgValueTypes::Multiple]
     )
