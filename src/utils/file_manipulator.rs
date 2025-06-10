@@ -24,6 +24,7 @@ pub fn to_absolute_path(path: String) -> String {
 pub fn to_relative_path(path: String) -> String {
     let current_directory = &env::current_dir().expect("[Sort Command] An internal error occured.");
     let path_as_path = Path::new(&path);
+
     if Path::is_relative(path_as_path) {
         path
     } else {
@@ -32,6 +33,7 @@ pub fn to_relative_path(path: String) -> String {
             Err(_) => path.clone(),
         }
     }
+    .replace("\\", "/")
 }
 
 pub fn get_month_number(file: &File) -> Result<u32, io::Error> {

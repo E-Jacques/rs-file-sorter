@@ -8,7 +8,7 @@ use crate::{
         sorter::sorter,
         sorting_strategy::SortingStrategy,
         strategy_parameter::{StrategyParameter, StrategyParameterKind},
-        strategy_validator::StrategyValidator,
+        strategy_validator::{StrategyValidator, StrategyValidatorError},
     },
     sorting_strategies::{
         manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
@@ -21,7 +21,35 @@ use crate::{
 };
 
 use super::cli_handler::parser::{ArgValue, ParsedArgs};
+
+pub static PARAMETER: &str = "parameter";
+pub static STACK: &str = "stack";
+
 static PARAMETER_SEP: &'static str = "=";
+
+enum DirectoryType {
+    Input,
+    Output,
+}
+
+impl DirectoryType {
+    fn as_str(self) -> &'static str {
+        match self {
+            DirectoryType::Input => "input",
+            DirectoryType::Output => "output",
+        }
+    }
+}
+
+enum SortCommandError {
+    WrongParamNumber(usize),
+    DirectoryNotFound(DirectoryType, String),
+    NotADirectory(String),
+    NoStrategyProvided,
+    MissingStrategyName,
+    UnknownStrategy(String, String),
+    InvalidStrategy(String, StrategyValidatorError),
+}
 
 impl SortingStrategy {
     pub fn get_validator(&self, name: &String) -> Option<&StrategyValidator> {
@@ -32,128 +60,151 @@ impl SortingStrategy {
 }
 
 pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Logger) {
-    if params.len() != 2 {
-        logger.error(&format!("expected 2 params, got {}.", params.len()));
-    }
-
-    let input_dir = &to_absolute_path(params[0].clone());
-    let output_dir = &to_absolute_path(params[1].clone());
-
-    if !file_or_dir_exists(input_dir.clone().into()) {
-        logger.error(&format!(
-            "input directory '{}' don't exists",
-            // We want to replace \\ with / to uniform the output across the OS for tests.
-            &to_relative_path(input_dir.clone()).replace("\\", "/")
-        ))
-    }
-
-    if !file_or_dir_exists(output_dir.clone().into()) {
-        logger.error(&format!(
-            "output directory '{}' don't exists",
-            // We want to replace \\ with / to uniform the output across the OS for tests.
-            &to_relative_path(output_dir.clone()).replace("\\", "/")
-        ))
-    }
-
-    if !metadata(input_dir.clone()).unwrap().is_dir() {
-        logger.error(&format!(
-            "'{}' isn't a directory",
-            // We want to replace \\ with / to uniform the output across the OS for tests.
-            &to_relative_path(input_dir.clone()).replace("\\", "/")
-        ))
-    }
-
-    if !metadata(output_dir.clone()).unwrap().is_dir() {
-        logger.error(&format!(
-            "'{}' isn't a directory",
-            // We want to replace \\ with / to uniform the output across the OS for tests.
-            &to_relative_path(output_dir.clone()).replace("\\", "/")
-        ))
-    }
-
     let sorting_strategies_list: StrategyCatalog =
         get_metadata_catalog().with(&get_manipulation_catalog());
 
-    let stack_arg_name = String::from("stack");
-    let default_stack_parsed_args = ParsedArgs {
-        arg_name: stack_arg_name.clone(),
-        arg_value: ArgValue::NotProvided,
-    };
-    let sorting_stacks = args
-        .into_iter()
-        .find(|arg| arg.arg_name == stack_arg_name)
-        .unwrap_or(default_stack_parsed_args);
+    match get_cli_inputs(args, params, STACK, sorting_strategies_list) {
+        Ok((input_dir, output_dir, sorting_strategies)) => {
+            let logger_borrowed = &logger.clone();
+            let rename_error_handler = |old_filename: &_, new_filename: &_| {
+                logger_borrowed.error(&format!(
+                    "unable to copy file {} to {}.",
+                    old_filename, new_filename
+                ));
+            };
 
-    let stacks = match sorting_stacks.arg_value {
-        ArgValue::NotProvided => {
-            logger.error("stack argument haven't been provided.");
-            panic!();
+            sorter(
+                &input_dir,
+                &output_dir,
+                sorting_strategies,
+                logger,
+                &rename_error_handler.clone(),
+            )
         }
-        ArgValue::Multiple(stacks) => stacks,
-        ArgValue::Single(stack) => vec![stack],
+        Err(err) => handle_errors(&logger, err),
+    };
+}
+
+fn get_cli_inputs(
+    args: Vec<ParsedArgs>,
+    params: Vec<String>,
+    stack_arg_name: &str,
+    sorting_strategies_list: StrategyCatalog,
+) -> Result<(String, String, Vec<SortingStrategy>), SortCommandError> {
+    let (input, output) = get_directories(params)?;
+    let stacks = get_stacks(args, stack_arg_name)?;
+    let sorting_strategies = get_storting_strategies(stacks, sorting_strategies_list)?;
+
+    Ok((input, output, sorting_strategies))
+}
+
+fn get_stacks(
+    args: Vec<ParsedArgs>,
+    stack_arg_name: &str,
+) -> Result<Vec<ArgDatum>, SortCommandError> {
+    match args.into_iter().find(|arg| arg.arg_name == stack_arg_name) {
+        Some(sorting_stacks) => match sorting_stacks.arg_value {
+            ArgValue::NotProvided => Err(SortCommandError::NoStrategyProvided),
+            ArgValue::Multiple(stacks) => Ok(stacks),
+            ArgValue::Single(stack) => Ok(vec![stack]),
+        },
+        None => Err(SortCommandError::NoStrategyProvided),
+    }
+}
+
+fn handle_errors(logger: &Logger, err: SortCommandError) {
+    let message = match err {
+        SortCommandError::WrongParamNumber(len) => format!("expected 2 params, got {}.", len),
+        SortCommandError::DirectoryNotFound(directory_type, relative_path) => format!(
+            "{} directory '{}' don't exists",
+            directory_type.as_str(),
+            relative_path
+        ),
+        SortCommandError::NotADirectory(relative_path) => {
+            format!("'{}' isn't a directory", relative_path)
+        }
+        SortCommandError::MissingStrategyName => {
+            "A value needs to be assigned to the stack argument.".to_string()
+        }
+        SortCommandError::NoStrategyProvided => "stack argument haven't been provided.".to_string(),
+        SortCommandError::UnknownStrategy(name, all_strategy_names) => format!(
+            "Unexpected stack value. Got '{}', expected one of: {}.",
+            name, all_strategy_names
+        ),
+        SortCommandError::InvalidStrategy(strategy_name, strategy_validator_error) => match strategy_validator_error {
+            StrategyValidatorError::MissingMandatoryParameter(strategy_validator) => format!("An error occurred for {} strategy. The following mandatory parameter is missing: {}.", strategy_name, strategy_validator.name),
+            StrategyValidatorError::UnknownParameter(parameter_name) => format!("An error occurred for {} strategy. The parameter is unknown: {}.", strategy_name, parameter_name),
+            StrategyValidatorError::TypeError(strategy_validator) => format!("An error occurred for {} strategy. The following parameter doesn't have the expected type: expecting {}.", strategy_name, strategy_validator.kind),
+        },
     };
 
-    let sorting_strategies = get_storting_strategies(stacks, sorting_strategies_list, &logger);
+    logger.error(&message);
+}
 
-    let logger_borrowed = &logger.clone();
-    let rename_error_handler = |old_filename: &_, new_filename: &_| {
-        logger_borrowed.error(&format!(
-            "unable to copy file {} to {}.",
-            old_filename, new_filename
-        ));
-    };
+fn get_directories(params: Vec<String>) -> Result<(String, String), SortCommandError> {
+    fn validate_directory(path: &String, dir_type: DirectoryType) -> Result<(), SortCommandError> {
+        let relative_path = to_relative_path(path.clone());
+        if !file_or_dir_exists(path.into()) {
+            Err(SortCommandError::DirectoryNotFound(dir_type, relative_path))
+        } else if !metadata(path).map(|m| m.is_dir()).unwrap_or(false) {
+            Err(SortCommandError::NotADirectory(relative_path))
+        } else {
+            Ok(())
+        }
+    }
 
-    sorter(
-        input_dir,
-        output_dir,
-        sorting_strategies,
-        logger.clone(),
-        &rename_error_handler.clone(),
-    )
+    if params.len() != 2 {
+        return Err(SortCommandError::WrongParamNumber(params.len()));
+    }
+
+    let input_dir = to_absolute_path(params[0].clone());
+    validate_directory(&input_dir, DirectoryType::Input)?;
+
+    let output_dir = to_absolute_path(params[1].clone());
+    validate_directory(&output_dir, DirectoryType::Output)?;
+
+    Ok((input_dir, output_dir))
 }
 
 fn get_storting_strategies(
     stacks: Vec<ArgDatum>,
     strategy_catalog: StrategyCatalog,
-    logger: &Logger,
-) -> Vec<SortingStrategy> {
+) -> Result<Vec<SortingStrategy>, SortCommandError> {
     let all_strategy_names = strategy_catalog.get_names().join(", ");
 
     stacks
         .into_iter()
         .map(|arg_datum| {
-            let name = arg_datum.value.as_ref().unwrap_or_else(|| {
-                logger.error("A value needs to be assigned to the stack argument.");
-                panic!();
-            });
+            let name = arg_datum
+                .value
+                .clone()
+                .ok_or(SortCommandError::MissingStrategyName)?;
 
-            let mut strategy = strategy_catalog.get_strategy(name).unwrap_or_else(|| {
-                logger.error(&format!(
-                    "Unexpected stack value. Got '{}', expected one of: {}.",
-                    name, all_strategy_names
-                ));
-                panic!();
-            });
+            let mut strategy =
+                strategy_catalog
+                    .get_strategy(&name)
+                    .ok_or(SortCommandError::UnknownStrategy(
+                        name.clone(),
+                        all_strategy_names.clone(),
+                    ))?;
 
-            if let Some(parsed_arg) = arg_datum
-                .child_args
-                .iter()
-                .find(|arg| arg.arg_name == "parameter")
-            {
-                let parameters = get_parameters_from_parsed_args(parsed_arg);
-
-                for (key, value) in parameters.iter() {
-                    let maybe_parameter_value = strategy.get_validator(key).and_then(|validator| {
-                        get_parameter_value(&strategy_catalog, validator, value)
-                    });
-
-                    if let Some(parameter_value) = maybe_parameter_value {
-                        strategy.add_parameter(key.to_string(), parameter_value);
+            if let Some(parsed_arg) = arg_datum.get_child(PARAMETER) {
+                for (key, value) in &get_parameters_from_parsed_args(parsed_arg) {
+                    if let Some(parameter_value) =
+                        strategy.get_validator(key).and_then(|validator| {
+                            get_parameter_value(&strategy_catalog, validator, value)
+                        })
+                    {
+                        strategy.add_parameter(key.clone(), parameter_value);
                     }
                 }
             }
 
             strategy
+                .validate()
+                .map_err(|err| SortCommandError::InvalidStrategy(name, err))?;
+
+            Ok(strategy)
         })
         .collect()
 }
@@ -164,22 +215,19 @@ fn get_parameter_value(
     value: &Vec<String>,
 ) -> Option<StrategyParameter> {
     match validator.kind {
-        StrategyParameterKind::Strategy => {
-            let strategies: Vec<Box<SortingStrategy>> = value
+        StrategyParameterKind::Strategy => Some(StrategyParameter::Strategy(
+            value
                 .iter()
                 .map(|v| strategy_catalog.get_strategy(v))
-                .filter(Option::is_some)
-                .map(|s| Box::new(s.unwrap()))
-                .collect();
-            Some(StrategyParameter::Strategy(strategies))
-        }
-        StrategyParameterKind::SingleString => {
-            if let Some(last_value) = value.iter().last() {
-                Some(StrategyParameter::SingleString(last_value.to_string()))
-            } else {
-                None
-            }
-        }
+                .flatten()
+                .map(Box::new)
+                .collect(),
+        )),
+        StrategyParameterKind::SingleString => value
+            .iter()
+            .last()
+            .cloned()
+            .map(StrategyParameter::SingleString),
     }
 }
 
