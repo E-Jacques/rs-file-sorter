@@ -137,6 +137,77 @@ pub mod tests_e2e_sort_command {
                 .join("file_2023-10-20_9E387272")
         ));
     }
+    #[test]
+    fn test_sort_with_parameters_and_concat() {
+        // set filenames
+        let files = vec![
+            FileCreator::from("file_2022-02-22_F1BDD782"),
+            FileCreator::from("file_2022-10-20_6FC02130"),
+            FileCreator::from("file_2022-10-04_1FCF21G8"),
+            FileCreator::from("file_2023-10-20_9E387272"),
+        ];
+
+        let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_6");
+
+        // define input_dir
+        let input_dir = common_dir.clone().join("input_dir");
+        clean_or_create_dir(input_dir.clone())
+            .expect("Should be able to clean or create directory before running test");
+
+        // define output dir
+        let output_dir = common_dir.clone().join("output_dir");
+        clean_or_create_dir(output_dir.clone())
+            .expect("Should be able to clean or create directory before running test");
+
+        // generate files in input directory
+        generate_test_files(&input_dir, files).expect("Unable to generate the test files!");
+
+        let final_input_dir = input_dir.clone().to_str().unwrap().to_string();
+        let final_output_dir = output_dir.clone().to_str().unwrap().to_string();
+        handle(
+            format!(
+                "sort --stack text --parameter value=base_directory --stack concat --parameter strategies=month --parameter strategies=year {} {}",
+                final_input_dir.clone(),
+                final_output_dir.clone()
+            ),
+            Some(true),
+        );
+
+        let content_of_target_dir = fs::read_dir(output_dir.clone()).unwrap();
+        assert_eq!(content_of_target_dir.count(), 1);
+
+        // Test if year files have been created.
+        let pathbuf_base_dir = output_dir.clone().join("base_directory");
+        assert!(file_or_dir_exists(pathbuf_base_dir.clone()));
+
+        let content_base_dir = fs::read_dir(pathbuf_base_dir.clone()).unwrap();
+        assert_eq!(content_base_dir.count(), 3);
+
+        assert!(file_or_dir_exists(
+            pathbuf_base_dir
+                .clone()
+                .join("02_Février2022")
+                .join("file_2022-02-22_F1BDD782")
+        ));
+        assert!(file_or_dir_exists(
+            pathbuf_base_dir
+                .clone()
+                .join("10_Octobre2022")
+                .join("file_2022-10-20_6FC02130")
+        ));
+        assert!(file_or_dir_exists(
+            pathbuf_base_dir
+                .clone()
+                .join("10_Octobre2022")
+                .join("file_2022-10-04_1FCF21G8")
+        ));
+        assert!(file_or_dir_exists(
+            pathbuf_base_dir
+                .clone()
+                .join("10_Octobre2023")
+                .join("file_2023-10-20_9E387272")
+        ));
+    }
 
     #[test]
     #[should_panic = "[ERROR] [Sort Command] input directory 'tests/rsc/sort/test_unknown/input_dir' don't exists"]

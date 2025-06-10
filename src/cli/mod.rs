@@ -24,8 +24,8 @@ pub fn handle(input: String, debug_mode: Option<bool>) {
         vec![ArgValueTypes::Single, ArgValueTypes::Multiple]
     )
     .linked_arg(
-        String::from("strategy"), 
-        String::from("associate a sorting rule with the previous combined stack."), 
+        String::from("parameter"), 
+        String::from("associate a parameter the the parent stack using a 'KEY=VALUE' format."), 
         vec![ArgValueTypes::Single, ArgValueTypes::Multiple]
     )
     .parameter(
