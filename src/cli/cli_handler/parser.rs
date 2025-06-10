@@ -13,6 +13,12 @@ impl ArgDatum {
             child_args: vec![],
         }
     }
+
+    pub fn get_child(&self, child_name: &str) -> Option<&ParsedArgs> {
+        self.child_args
+            .iter()
+            .find(|arg| arg.arg_name == child_name)
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
