@@ -145,6 +145,9 @@ impl EditableTreeItem {
     }
 
     fn set_strategy_properties_setter(&mut self) {
+        self.strategy_parameter_elements.clear();
+        self.single_string_parameter_elements.clear();
+
         if let Some(strategy) = self.get_sorting_strategy() {
             for validator in strategy.validators {
                 match validator.kind {
