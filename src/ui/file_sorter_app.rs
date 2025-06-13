@@ -46,14 +46,8 @@ impl FileSorterApp {
             editable_file_tree: editable_tree::editable_tree::EditableTree::new(
                 get_metadata_catalog().with(&get_manipulation_catalog()),
             ),
-            directory_input: directory_input::DirectoryInput::new(
-                None,
-                Some(String::from("Input path")),
-            ),
-            directory_output: directory_input::DirectoryInput::new(
-                None,
-                Some(String::from("Output path")),
-            ),
+            directory_input: directory_input::DirectoryInput::new(None, "Input path".to_string()),
+            directory_output: directory_input::DirectoryInput::new(None, "Output path".to_string()),
         }
     }
 
