@@ -1,14 +1,10 @@
 use std::fmt::Debug;
 
-use iced::{
-    border::Radius,
-    widget::{button, column, container},
-    Border, Color, Element, Length,
-};
+use iced::{widget::column, Element, Length};
 
 use crate::{
     core::sorting_strategy::SortingStrategy, sorting_strategies::strategy_catalog::StrategyCatalog,
-    utils::string_manipulator::random_string,
+    ui::widgets::buttons::primary_button::primary_button, utils::string_manipulator::random_string,
 };
 
 use super::{
@@ -69,25 +65,16 @@ impl EditableTree {
                     .map(move |item_message| TreeMessage::ItemEvent(dir.id.clone(), item_message))
             });
 
-        let add_directory_btn: Element<'_, TreeMessage> = button("Add Directory")
+        let add_directory_btn: Element<'_, TreeMessage> = primary_button("Add Directory")
             .on_press(TreeMessage::AddEmptyItem)
             .width(Length::Fill)
             .into();
-        let content = column(columns.into_iter())
-            .push(add_directory_btn)
-            .padding(20)
-            .spacing(10);
 
-        container(content)
+        column(columns.into_iter())
+            .push(add_directory_btn)
+            .spacing(10)
             .width(Length::Fill)
             .height(Length::Shrink)
-            .style(|_| {
-                container::Style::default().border(Border {
-                    color: Color::BLACK,
-                    width: 1.0,
-                    radius: Radius::new(4),
-                })
-            })
             .into()
     }
 

@@ -4,6 +4,8 @@ use iced::{
 };
 use rfd::FileDialog;
 
+use crate::ui::custom_theme;
+
 use super::icon;
 #[derive(Clone, Debug)]
 pub enum DirectoryInputMessage {
@@ -40,8 +42,9 @@ impl DirectoryInput {
             .path
             .clone()
             .unwrap_or(self.placeholder.clone().unwrap_or_default());
-        let button =
-            button(icon::icon(icon::FOLDER_CLOSED)).on_press(DirectoryInputMessage::OpenExplorer);
+        let button = button(icon::icon(icon::FOLDER_CLOSED))
+            .on_press(DirectoryInputMessage::OpenExplorer)
+            .style(custom_theme::ButtonPrimary::style);
         Row::new()
             .push(text(displayed_path).width(Length::Fill))
             .push(button)
