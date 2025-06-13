@@ -1,5 +1,5 @@
 use iced::{
-    widget::{button, column, container},
+    widget::{column, scrollable},
     Element, Length,
 };
 
@@ -8,6 +8,7 @@ use crate::{
     sorting_strategies::{
         manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
     },
+    ui::widgets::buttons::primary_button::primary_button,
     utils::logger::Logger,
 };
 
@@ -84,13 +85,15 @@ impl FileSorterApp {
             .view()
             .map(|msg| Message::EditableFileTreeMessage(msg));
 
-        let sort_button = button("Sort").on_press(Message::Sort).width(Length::Fill);
+        let sort_button = primary_button("Sort")
+            .on_press(Message::Sort)
+            .width(Length::Fill);
 
         let content = column![input_path, output_path, output_path_tree, sort_button]
             .padding(20)
             .spacing(10);
 
-        container(content)
+        scrollable(content)
             .width(Length::Fill)
             .height(Length::Shrink)
             .into()

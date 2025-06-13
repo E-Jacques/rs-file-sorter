@@ -1,6 +1,6 @@
-use iced::{widget::text_input, Element};
+use iced::{widget, Element};
 
-use crate::ui::widgets::editable_tree::shared::TreeTextInputMessage;
+use crate::ui::{custom_theme, widgets::editable_tree::shared::TreeTextInputMessage};
 
 #[derive(Debug, Clone)]
 pub struct EditableTreeItemTextInput {
@@ -17,8 +17,9 @@ impl EditableTreeItemTextInput {
     }
 
     pub fn view(&self) -> Element<'_, TreeTextInputMessage> {
-        text_input(&self.placeholder, &self.value)
+        widget::text_input(&self.placeholder, &self.value)
             .on_input(TreeTextInputMessage::ValueUpdate)
+            .style(custom_theme::TextInput::style)
             .into()
     }
 
