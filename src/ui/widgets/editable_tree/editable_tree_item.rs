@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use iced::{
-    widget::{button, column, combo_box, container, row, text, Column, ComboBox},
-    Element, Length,
+    widget::{column, combo_box, container, row, text, Column, ComboBox},
+    Alignment, Element, Length,
 };
 
 use crate::{
@@ -11,12 +11,16 @@ use crate::{
         strategy_parameter::{StrategyParameter, StrategyParameterKind},
     },
     sorting_strategies::strategy_catalog::StrategyCatalog,
-    ui::widgets::{
-        editable_tree::{
-            editable_tree::EditableTree, editable_tree_item_text_input::EditableTreeItemTextInput,
-            shared::TreeInputMessage,
+    ui::{
+        custom_theme,
+        widgets::{
+            buttons::icon_button::icon_button,
+            editable_tree::{
+                editable_tree::EditableTree,
+                editable_tree_item_text_input::EditableTreeItemTextInput, shared::TreeInputMessage,
+            },
+            icon,
         },
-        icon,
     },
 };
 
@@ -44,13 +48,13 @@ impl EditableTreeItem {
     }
 
     pub fn view(&self) -> Element<'_, TreeItemMessage> {
-        let delete_btn: Element<'_, TreeItemMessage> = button(icon::icon(icon::DELETE))
+        let delete_btn: Element<'_, TreeItemMessage> = icon_button(icon::DELETE)
             .on_press(TreeItemMessage::DirectoryRemoved)
             .into();
-        let up_btn: Element<'_, TreeItemMessage> = button(icon::icon(icon::ARROW_UP))
+        let up_btn: Element<'_, TreeItemMessage> = icon_button(icon::ARROW_UP)
             .on_press(TreeItemMessage::MoveDirectory(DirectoryMovement::Up))
             .into();
-        let down_btn: Element<'_, TreeItemMessage> = button(icon::icon(icon::ARROW_DOWN))
+        let down_btn: Element<'_, TreeItemMessage> = icon_button(icon::ARROW_DOWN)
             .on_press(TreeItemMessage::MoveDirectory(DirectoryMovement::Down))
             .into();
 
@@ -60,18 +64,29 @@ impl EditableTreeItem {
             self.selected_strategy.as_ref(),
             move |selected_strategy| TreeItemMessage::StrategyChanged(selected_strategy),
         )
+        .input_style(custom_theme::TextInput::style)
         .into();
 
-        let header: Element<'_, TreeItemMessage> =
-            row![strategy_name_input, delete_btn, up_btn, down_btn]
-                .spacing(10)
-                .width(Length::Fill)
-                .into();
+        let header: Element<'_, TreeItemMessage> = row![
+            strategy_name_input,
+            row![delete_btn, up_btn, down_btn].spacing(4)
+        ]
+        .align_y(Alignment::Center)
+        .spacing(24)
+        .width(Length::Fill)
+        .into();
         let body = self.render_all_elements();
 
         container(column![header, body].spacing(8))
             .width(Length::Fill)
             .height(Length::Shrink)
+            .padding(16)
+            .style(|_| {
+                let mut style = container::Style::default();
+                style.border = custom_theme::border_style();
+
+                style
+            })
             .into()
     }
 
