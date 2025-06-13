@@ -1,5 +1,5 @@
 use iced::{
-    widget::{button, text, Row},
+    widget::{button, column, container, row, text},
     Element, Length,
 };
 use rfd::FileDialog;
@@ -20,36 +20,41 @@ pub enum DirectoryInputEvent {
 
 pub(crate) struct DirectoryInput {
     path: Option<String>,
-    placeholder: Option<String>,
+    label: String,
 }
 
 impl Default for DirectoryInput {
     fn default() -> Self {
         DirectoryInput {
             path: None,
-            placeholder: None,
+            label: String::default(),
         }
     }
 }
 
 impl DirectoryInput {
-    pub fn new(path: Option<String>, placeholder: Option<String>) -> Self {
-        DirectoryInput { path, placeholder }
+    pub fn new(path: Option<String>, label: String) -> Self {
+        DirectoryInput { path, label }
     }
 
     pub fn view(&self) -> Element<'_, DirectoryInputMessage> {
-        let displayed_path = self
-            .path
-            .clone()
-            .unwrap_or(self.placeholder.clone().unwrap_or_default());
         let button = button(icon::icon(icon::FOLDER_CLOSED))
             .on_press(DirectoryInputMessage::OpenExplorer)
             .style(custom_theme::ButtonPrimary::style);
-        Row::new()
-            .push(text(displayed_path).width(Length::Fill))
-            .push(button)
+        let header = row![text(self.label.clone()).width(Length::Fill), button]
             .spacing(8)
-            .into()
+            .align_y(iced::Alignment::End);
+        let body = container(text(self.path.clone().unwrap_or(" ".to_string())))
+            .width(Length::Fill)
+            .padding(4)
+            .style(|_| {
+                let mut style = container::Style::default();
+                style.border = custom_theme::border_style();
+
+                style
+            });
+
+        column![header, body].spacing(8).into()
     }
 
     pub fn update(&mut self, message: DirectoryInputMessage) -> DirectoryInputEvent {
