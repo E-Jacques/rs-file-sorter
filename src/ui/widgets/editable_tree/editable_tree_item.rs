@@ -17,7 +17,9 @@ use crate::{
             buttons::icon_button::icon_button,
             editable_tree::{
                 editable_tree::EditableTree,
-                editable_tree_item_text_input::EditableTreeItemTextInput, shared::TreeInputMessage,
+                editable_tree_item_combo_box::EditableTreeItemComboBox,
+                editable_tree_item_text_input::EditableTreeItemTextInput,
+                shared::{StringParameterInput, TreeInputMessage},
             },
             icon,
         },
@@ -27,12 +29,17 @@ use crate::{
 use super::shared::{DirectoryMovement, StrategyOptions, TreeItemMessage};
 
 #[derive(Debug, Clone)]
+enum ChildElement {
+    StrategyParameter(EditableTree),
+    StringParameter(Box<dyn StringParameterInput>),
+}
+
+#[derive(Debug, Clone)]
 pub struct EditableTreeItem {
     selected_strategy: Option<String>,
     strategy_options: StrategyOptions,
     strategy_catalog: StrategyCatalog,
-    strategy_parameter_elements: HashMap<String, EditableTree>,
-    single_string_parameter_elements: HashMap<String, EditableTreeItemTextInput>,
+    child_elements: HashMap<String, ChildElement>,
 }
 
 impl EditableTreeItem {
@@ -42,8 +49,7 @@ impl EditableTreeItem {
             selected_strategy: None,
             strategy_catalog,
             strategy_options,
-            strategy_parameter_elements: HashMap::new(),
-            single_string_parameter_elements: HashMap::new(),
+            child_elements: HashMap::new(),
         }
     }
 
@@ -93,35 +99,29 @@ impl EditableTreeItem {
     fn render_all_elements(&self) -> Element<'_, TreeItemMessage> {
         let mut target_column = Column::new();
 
-        for (name, screen) in &self.strategy_parameter_elements {
+        for (name, screen) in &self.child_elements {
             let param_name_text: Element<'_, TreeItemMessage> = text(name).into();
-            let editable_tree_element: Element<'_, TreeItemMessage> =
-                screen.view().map(move |child_message| {
-                    TreeItemMessage::ParameterChanged(
-                        name.clone(),
-                        Box::new(TreeInputMessage::EditableTree(child_message)),
-                    )
-                });
+            let editable_tree_element: Element<'_, TreeItemMessage> = match screen {
+                ChildElement::StrategyParameter(editable_tree_item) => {
+                    editable_tree_item.view().map(move |child_message| {
+                        TreeItemMessage::ParameterChanged(
+                            name.clone(),
+                            Box::new(TreeInputMessage::EditableTree(child_message)),
+                        )
+                    })
+                }
+                ChildElement::StringParameter(element) => {
+                    element.view().map(move |child_message| {
+                        TreeItemMessage::ParameterChanged(
+                            name.clone(),
+                            Box::new(TreeInputMessage::TextInput(child_message)),
+                        )
+                    })
+                }
+            };
             let col: Element<'_, TreeItemMessage> = Column::new()
                 .push(param_name_text)
                 .push(editable_tree_element)
-                .spacing(4)
-                .into();
-            target_column = target_column.push(col);
-        }
-
-        for (name, screen) in &self.single_string_parameter_elements {
-            let param_name_text: Element<'_, TreeItemMessage> = text(name).into();
-            let text_input_element: Element<'_, TreeItemMessage> =
-                screen.view().map(move |child_message| {
-                    TreeItemMessage::ParameterChanged(
-                        name.clone(),
-                        Box::new(TreeInputMessage::TextInput(child_message)),
-                    )
-                });
-            let col: Element<'_, TreeItemMessage> = Column::new()
-                .push(param_name_text)
-                .push(text_input_element)
                 .spacing(4)
                 .into();
             target_column = target_column.push(col);
@@ -139,16 +139,15 @@ impl EditableTreeItem {
             TreeItemMessage::ParameterChanged(parameter_name, parameter_message) => {
                 match *parameter_message {
                     TreeInputMessage::EditableTree(tree_message) => {
-                        if let Some(element) =
-                            self.strategy_parameter_elements.get_mut(&parameter_name)
+                        if let Some(ChildElement::StrategyParameter(element)) =
+                            self.child_elements.get_mut(&parameter_name)
                         {
                             element.update(tree_message);
                         }
                     }
                     TreeInputMessage::TextInput(tree_text_input_message) => {
-                        if let Some(element) = self
-                            .single_string_parameter_elements
-                            .get_mut(&parameter_name)
+                        if let Some(ChildElement::StringParameter(element)) =
+                            self.child_elements.get_mut(&parameter_name)
                         {
                             element.update(tree_text_input_message);
                         }
@@ -160,22 +159,35 @@ impl EditableTreeItem {
     }
 
     fn set_strategy_properties_setter(&mut self) {
-        self.strategy_parameter_elements.clear();
-        self.single_string_parameter_elements.clear();
+        self.child_elements.clear();
 
         if let Some(strategy) = self.get_sorting_strategy() {
             for validator in strategy.validators {
                 match validator.kind {
                     StrategyParameterKind::Strategy => {
-                        self.strategy_parameter_elements.insert(
+                        self.child_elements.insert(
                             validator.name.clone(),
-                            EditableTree::new(self.strategy_catalog.clone()),
+                            ChildElement::StrategyParameter(EditableTree::new(
+                                self.strategy_catalog.clone(),
+                            )),
                         );
                     }
                     StrategyParameterKind::SingleString => {
-                        self.single_string_parameter_elements.insert(
+                        self.child_elements.insert(
                             validator.name.clone(),
-                            EditableTreeItemTextInput::new("Insert a value here".to_string()),
+                            ChildElement::StringParameter(Box::new(
+                                EditableTreeItemTextInput::new("Insert a value here".to_string()),
+                            )),
+                        );
+                    }
+                    StrategyParameterKind::Choice(items) => {
+                        self.child_elements.insert(
+                            validator.name.clone(),
+                            ChildElement::StringParameter(Box::new(EditableTreeItemComboBox::new(
+                                "Select an option".to_string(),
+                                None,
+                                items,
+                            ))),
                         );
                     }
                 }
@@ -187,22 +199,24 @@ impl EditableTreeItem {
         let name = self.selected_strategy.as_ref()?;
         let mut strategy = self.strategy_catalog.get_strategy(name)?;
 
-        for (key, screen) in &self.single_string_parameter_elements {
-            strategy.add_parameter(
-                key.clone(),
-                StrategyParameter::SingleString(screen.get_value()),
-            );
-        }
+        for (key, child_element) in &self.child_elements {
+            let maybe_value: Option<StrategyParameter> = match child_element {
+                ChildElement::StrategyParameter(screen) => Some(StrategyParameter::Strategy(
+                    screen
+                        .get_sorting_strategies()
+                        .iter()
+                        .cloned()
+                        .map(Box::new)
+                        .collect(),
+                )),
+                ChildElement::StringParameter(screen) => {
+                    screen.get_value().map(StrategyParameter::SingleString)
+                }
+            };
 
-        for (key, screen) in &self.strategy_parameter_elements {
-            let strategies = screen
-                .get_sorting_strategies()
-                .iter()
-                .cloned()
-                .map(Box::new)
-                .collect();
-
-            strategy.add_parameter(key.clone(), StrategyParameter::Strategy(strategies));
+            if let Some(value) = maybe_value {
+                strategy.add_parameter(key.clone(), value);
+            }
         }
 
         Some(strategy)
