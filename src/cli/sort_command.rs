@@ -223,7 +223,7 @@ fn get_parameter_value(
                 .map(Box::new)
                 .collect(),
         )),
-        StrategyParameterKind::SingleString => value
+        StrategyParameterKind::Choice(_) | StrategyParameterKind::SingleString => value
             .iter()
             .last()
             .cloned()
