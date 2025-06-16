@@ -1,4 +1,4 @@
-use iced::widget::combo_box;
+use iced::{widget::combo_box, Element};
 
 pub type StrategyOptions = combo_box::State<String>;
 
@@ -30,4 +30,17 @@ pub enum TreeItemMessage {
     StrategyChanged(String),
     MoveDirectory(DirectoryMovement),
     ParameterChanged(String, Box<TreeInputMessage>),
+}
+
+pub trait StringParameterInput: std::fmt::Debug {
+    fn view(&self) -> Element<'_, TreeTextInputMessage>;
+    fn update(&mut self, msg: TreeTextInputMessage);
+    fn get_value(&self) -> Option<String>;
+    fn clone_box(&self) -> Box<dyn StringParameterInput>;
+}
+
+impl Clone for Box<dyn StringParameterInput> {
+    fn clone(&self) -> Box<dyn StringParameterInput> {
+        self.clone_box()
+    }
 }
