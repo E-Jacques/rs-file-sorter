@@ -14,10 +14,11 @@ impl PartialEq for Box<SortingStrategy> {
     }
 }
 
-#[derive(Clone, Debug, Copy, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum StrategyParameterKind {
     Strategy,
     SingleString,
+    Choice(Vec<String>),
 }
 
 impl Display for StrategyParameterKind {
@@ -25,6 +26,10 @@ impl Display for StrategyParameterKind {
         f.write_str(match self {
             StrategyParameterKind::Strategy => "strategy",
             StrategyParameterKind::SingleString => "single string",
+            StrategyParameterKind::Choice(choices) => {
+                let list_str = choices.join(",");
+                return write!(f, "choice: ({})", list_str);
+            }
         })
     }
 }
