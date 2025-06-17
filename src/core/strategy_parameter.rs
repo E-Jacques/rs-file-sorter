@@ -34,6 +34,23 @@ impl Display for StrategyParameterKind {
     }
 }
 
+impl StrategyParameterKind {
+    pub fn is_matching(&self, value: &StrategyParameter) -> bool {
+        match self {
+            StrategyParameterKind::Strategy | StrategyParameterKind::SingleString => {
+                value.kind() == *self
+            }
+            StrategyParameterKind::Choice(items) => {
+                if let StrategyParameter::SingleString(single_string) = value {
+                    items.iter().any(|item| item == single_string)
+                } else {
+                    false
+                }
+            }
+        }
+    }
+}
+
 impl StrategyParameter {
     pub fn kind(&self) -> StrategyParameterKind {
         match self {
