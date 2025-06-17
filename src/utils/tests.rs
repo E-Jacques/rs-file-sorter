@@ -1,9 +1,4 @@
 mod file_manipulator_tests {
-    use std::{env, fs::File};
-
-    use rsft_utils::{common::generate_test_files, file_creator::FileCreator};
-
-    use crate::utils::file_manipulator::get_year_number;
 
     mod to_absolute_path {
         use std::env;
@@ -31,12 +26,13 @@ mod file_manipulator_tests {
         }
     }
 
-    mod get_month_number_test {
+    mod get_last_modified_time {
         use std::{env, fs::File};
 
+        use chrono::Datelike;
         use rsft_utils::{common::generate_test_files, file_creator::FileCreator};
 
-        use crate::utils::file_manipulator::get_month_number;
+        use crate::utils::file_manipulator::get_last_modified_time;
 
         #[test]
         fn test_january() {
@@ -53,10 +49,10 @@ mod file_manipulator_tests {
                 .expect("Should be able to generate tests files");
 
             let file = File::open(full_path).expect("Should be able to access file, please check that 'tests/rsc/files/file_2021-01-08_F71C2883' is present");
-            let month_number =
-                get_month_number(&file).expect("Should be able to extract month number");
+            let datetime =
+                get_last_modified_time(&file).expect("Should be able to extract month number");
 
-            assert_eq!(month_number, 1u32);
+            assert_eq!(datetime.month0(), 0u32);
         }
 
         #[test]
@@ -74,32 +70,33 @@ mod file_manipulator_tests {
                 .expect("Should be able to generate tests files");
 
             let file = File::open(full_path).expect("Should be able to access file, please check that 'tests/rsc/files/file_2021-12-06_F4E4926F' is present");
-            let month_number =
-                get_month_number(&file).expect("Should be able to extract month number");
+            let datetime =
+                get_last_modified_time(&file).expect("Should be able to extract month number");
 
-            assert_eq!(month_number, 12u32);
+            assert_eq!(datetime.month0(), 11u32);
         }
-    }
 
-    #[test]
-    fn test_get_year_number() {
-        let filename = "file_2018-11-06_14835535";
-        let target_dir = env::current_dir()
-            .unwrap()
-            .join("tests")
-            .join("rsc")
-            .join("files");
+        #[test]
+        fn test_get_year_number() {
+            let filename = "file_2018-11-06_14835535";
+            let target_dir = env::current_dir()
+                .unwrap()
+                .join("tests")
+                .join("rsc")
+                .join("files");
 
-        let full_path = target_dir.clone().join(filename);
+            let full_path = target_dir.clone().join(filename);
 
-        let file_creator = FileCreator::from(filename);
-        generate_test_files(&target_dir, vec![file_creator])
-            .expect("Should be able to generate tests files");
+            let file_creator = FileCreator::from(filename);
+            generate_test_files(&target_dir, vec![file_creator])
+                .expect("Should be able to generate tests files");
 
-        let file = File::open(full_path).expect("Should be able to access file, please check that 'tests/rsc/files/file_2018-11-06_14835535' is present");
-        let year_number = get_year_number(&file).expect("Should be able to extract year number");
+            let file = File::open(full_path).expect("Should be able to access file, please check that 'tests/rsc/files/file_2018-11-06_14835535' is present");
+            let datetime =
+                get_last_modified_time(&file).expect("Should be able to extract year number");
 
-        assert_eq!(year_number, 2018);
+            assert_eq!(datetime.year(), 2018);
+        }
     }
 
     mod move_file {
@@ -272,44 +269,5 @@ mod string_manipulator_tests {
             let value = random_string(0);
             assert_eq!(value.len(), 0);
         }
-    }
-}
-
-mod time_manipulator_tests {
-    use chrono::{DateTime, TimeZone, Utc};
-    use std::time::SystemTime;
-
-    use crate::utils::time_manipulator::{
-        get_month_number_from_systemtime, get_year_number_from_systemtime,
-    };
-
-    #[test]
-    fn get_year_number_from_systemtime_tests() {
-        let date_time: DateTime<Utc> = Utc.with_ymd_and_hms(2014, 7, 8, 0, 0, 0).unwrap().into();
-        let system_time: SystemTime = date_time.into();
-        assert_eq!(get_year_number_from_systemtime(system_time), 2014);
-    }
-
-    #[test]
-    fn get_month_number_from_systemtime_tests_random_month() {
-        // Random month
-        let date_time: DateTime<Utc> = Utc.with_ymd_and_hms(2014, 7, 8, 0, 0, 0).unwrap().into();
-        let system_time: SystemTime = date_time.into();
-        assert_eq!(get_month_number_from_systemtime(system_time), 7);
-    }
-
-    #[test]
-    fn get_month_number_from_systemtime_tests_january_month() {
-        // On the edge months
-        let date_time: DateTime<Utc> = Utc.with_ymd_and_hms(2014, 1, 8, 0, 0, 0).unwrap().into();
-        let system_time: SystemTime = date_time.into();
-        assert_eq!(get_month_number_from_systemtime(system_time), 1);
-    }
-
-    #[test]
-    fn get_month_number_from_systemtime_tests_december_month() {
-        let date_time: DateTime<Utc> = Utc.with_ymd_and_hms(2014, 12, 8, 0, 0, 0).unwrap().into();
-        let system_time: SystemTime = date_time.into();
-        assert_eq!(get_month_number_from_systemtime(system_time), 12);
     }
 }

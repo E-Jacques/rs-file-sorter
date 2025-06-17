@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{env, fs, io};
 
-use super::time_manipulator;
+use chrono::{DateTime, Local};
 
 pub fn to_absolute_path(path: String) -> String {
     let current_directory = &env::current_dir().expect("[Sort Command] An internal error occured.");
@@ -36,7 +36,7 @@ pub fn to_relative_path(path: String) -> String {
     .replace("\\", "/")
 }
 
-pub fn get_month_number(file: &File) -> Result<u32, io::Error> {
+pub fn get_last_modified_time(file: &File) -> Result<DateTime<Local>, io::Error> {
     // Get the metadata of the file
     let metadata = file.metadata()?;
 
@@ -47,25 +47,7 @@ pub fn get_month_number(file: &File) -> Result<u32, io::Error> {
     let system_time = SystemTime::UNIX_EPOCH + modified_time.duration_since(UNIX_EPOCH).unwrap();
 
     // Extract the month from the broken-down time
-    let month = time_manipulator::get_month_number_from_systemtime(system_time);
-    println!("{:#?}", month);
-
-    Ok(month)
-}
-
-pub fn get_year_number(file: &File) -> Result<i32, io::Error> {
-    // Get the metadata of the file
-    let metadata = file.metadata()?;
-
-    // Extract the modification time from the metadata
-    let modified_time = metadata.modified()?;
-
-    // Convert the modification time (seconds since UNIX_EPOCH) into a SystemTime
-    let system_time = SystemTime::UNIX_EPOCH + modified_time.duration_since(UNIX_EPOCH).unwrap();
-
-    let year = time_manipulator::get_year_number_from_systemtime(system_time);
-
-    Ok(year)
+    Ok(system_time.into())
 }
 
 pub fn move_file(from: PathBuf, to: PathBuf, create_dir_if_missing: bool) -> io::Result<()> {
