@@ -48,7 +48,12 @@ impl SortingStrategy {
             let validator_name = validator.name;
             panic!("[Sorting Strategy] The name associated with each validator should be unique. '{validator_name}' has been specified twice.");
         } else {
+            // Set default value in parameter. Can still be overloaded if required
+            if let Some(default_value) = validator.default_value.clone() {
+                self.add_parameter(validator.name.clone(), default_value);
+            }
             self.validators.push(validator);
+
             self
         }
     }
