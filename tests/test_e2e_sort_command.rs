@@ -53,19 +53,19 @@ pub mod tests_e2e_sort_command {
         assert!(file_or_dir_exists(
             pathbuf_2022_dir
                 .clone()
-                .join("02_Février")
+                .join("02_February")
                 .join("file_2022-02-22_F1BDD782")
         ));
         assert!(file_or_dir_exists(
             pathbuf_2022_dir
                 .clone()
-                .join("10_Octobre")
+                .join("10_October")
                 .join("file_2022-10-20_6FC02130")
         ));
         assert!(file_or_dir_exists(
             pathbuf_2023_dir
                 .clone()
-                .join("10_Octobre")
+                .join("10_October")
                 .join("file_2023-10-20_9E387272")
         ));
     }
@@ -121,19 +121,19 @@ pub mod tests_e2e_sort_command {
         assert!(file_or_dir_exists(
             pathbuf_2022_dir
                 .clone()
-                .join("02_Février")
+                .join("02_February")
                 .join("file_2022-02-22_F1BDD782")
         ));
         assert!(file_or_dir_exists(
             pathbuf_2022_dir
                 .clone()
-                .join("10_Octobre")
+                .join("10_October")
                 .join("file_2022-10-20_6FC02130")
         ));
         assert!(file_or_dir_exists(
             pathbuf_2023_dir
                 .clone()
-                .join("10_Octobre")
+                .join("10_October")
                 .join("file_2023-10-20_9E387272")
         ));
     }
@@ -186,25 +186,25 @@ pub mod tests_e2e_sort_command {
         assert!(file_or_dir_exists(
             pathbuf_base_dir
                 .clone()
-                .join("02_Février2022")
+                .join("02_February2022")
                 .join("file_2022-02-22_F1BDD782")
         ));
         assert!(file_or_dir_exists(
             pathbuf_base_dir
                 .clone()
-                .join("10_Octobre2022")
+                .join("10_October2022")
                 .join("file_2022-10-20_6FC02130")
         ));
         assert!(file_or_dir_exists(
             pathbuf_base_dir
                 .clone()
-                .join("10_Octobre2022")
+                .join("10_October2022")
                 .join("file_2022-10-04_1FCF21G8")
         ));
         assert!(file_or_dir_exists(
             pathbuf_base_dir
                 .clone()
-                .join("10_Octobre2023")
+                .join("10_October2023")
                 .join("file_2023-10-20_9E387272")
         ));
     }
