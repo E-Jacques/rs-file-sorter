@@ -235,7 +235,6 @@ mod parser_tests {
             String::from("--"),
         )
         .unwrap();
-        println!("{:?}", parsed_command.args);
         assert_eq!(parsed_command.params.len(), 0);
         assert_eq!(parsed_command.args.len(), 4);
         assert_eq!(parsed_command.args[0].arg_name, "arg-2");

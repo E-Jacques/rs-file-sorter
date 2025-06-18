@@ -65,12 +65,10 @@ impl SortingStrategy {
     }
 
     pub(crate) fn apply(&self, file: &File) -> String {
-        println!("{:#?}", file);
         let file_mutex = Arc::new(Mutex::new(file));
         let file_clone = Arc::clone(&file_mutex);
         let file_lock = file_clone.lock().unwrap();
         let result = (self.action)(&*file_lock, &self.parameters.clone());
-        println!("{:#?}", result);
 
         return result;
     }
