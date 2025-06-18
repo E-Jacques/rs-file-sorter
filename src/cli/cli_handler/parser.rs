@@ -113,7 +113,6 @@ pub fn parse_cli(
     arg_prefix: String,
 ) -> Result<ParsedCommand, ParserError> {
     let mut parsed_command = parse_parameters_and_args(&command, arg_prefix);
-    println!("parse : {:?}", parsed_command);
     match handle_nested_arguments(command_handler, parsed_command.args) {
         Ok(arguments) => {
             parsed_command.args = arguments;
@@ -122,9 +121,7 @@ pub fn parse_cli(
             return Err(parser_error);
         }
     }
-    println!("parse post nested : {:?}", parsed_command);
     parsed_command.args = group_args_by_name(parsed_command.args);
-    println!("parse mid : {:?}", parsed_command);
 
     let expected_args: Vec<String> = command_handler
         .args
@@ -132,7 +129,6 @@ pub fn parse_cli(
         .map(|arg| arg.name.clone())
         .collect();
     parsed_command = add_not_provided_but_expected_args(&parsed_command, expected_args);
-    println!("parse end : {:?}", parsed_command);
 
     Ok(parsed_command)
 }
