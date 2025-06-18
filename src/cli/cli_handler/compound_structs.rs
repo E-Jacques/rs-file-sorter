@@ -25,7 +25,6 @@ pub struct ArgBuilder {
 
 impl ArgBuilder {
     pub fn validate(&self, parsed_command: ParsedCommand) -> ArgValidationErrorEnum {
-        println!("validate : {:?}", parsed_command.clone());
         let parsed_arg = match parsed_command
             .args
             .into_iter()

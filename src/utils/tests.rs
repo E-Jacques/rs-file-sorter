@@ -138,7 +138,6 @@ mod file_manipulator_tests {
 
             match fs::read_to_string(to.clone()) {
                 Ok(content) => {
-                    println!("{}", content);
                     // check that right file have be copy
                     assert_eq!(content.as_str(), "my content");
                     fs::remove_file(to).expect("Should be able to clean output directory");
@@ -218,7 +217,6 @@ mod file_manipulator_tests {
             match fs::read_to_string(to.clone()) {
                 Ok(content) => {
                     // check that right file have be copy
-                    println!("{}", content);
                     assert_eq!(content.as_str(), "my content");
                     fs::remove_dir_all(to_dir).expect("Should be able to clean output directory");
                 }
