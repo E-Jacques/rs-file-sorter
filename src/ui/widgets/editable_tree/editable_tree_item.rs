@@ -181,11 +181,15 @@ impl EditableTreeItem {
                         );
                     }
                     StrategyParameterKind::Choice(items) => {
+                        let default_value: Option<String> = match validator.default_value {
+                            Some(StrategyParameter::SingleString(value)) => Some(value),
+                            _ => None,
+                        };
                         self.child_elements.insert(
                             validator.name.clone(),
                             ChildElement::StringParameter(Box::new(EditableTreeItemComboBox::new(
                                 "Select an option".to_string(),
-                                None,
+                                default_value,
                                 items,
                             ))),
                         );
