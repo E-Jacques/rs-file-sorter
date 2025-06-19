@@ -1,4 +1,7 @@
-use crate::core::strategy_parameter::{StrategyParameter, StrategyParameterKind};
+use crate::core::{
+    error::strategy_validator_error::Error,
+    strategy_parameter::{StrategyParameter, StrategyParameterKind},
+};
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
@@ -15,13 +18,6 @@ impl PartialEq for StrategyValidator {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum StrategyValidatorError {
-    MissingMandatoryParameter(StrategyValidator),
-    UnknownParameter(String),
-    TypeError(StrategyValidator),
-}
-
 impl StrategyValidator {
     pub fn new(name: &str, kind: StrategyParameterKind, mandatory: bool) -> StrategyValidator {
         StrategyValidator {
@@ -32,17 +28,10 @@ impl StrategyValidator {
         }
     }
 
-    pub fn validate(
-        &self,
-        parameters: &HashMap<String, StrategyParameter>,
-    ) -> Result<(), StrategyValidatorError> {
+    pub fn validate(&self, parameters: &HashMap<String, StrategyParameter>) -> Result<(), Error> {
         match parameters.get(&self.name) {
-            None if self.mandatory => Err(StrategyValidatorError::MissingMandatoryParameter(
-                self.clone(),
-            )),
-            Some(param) if !self.kind.is_matching(param) => {
-                Err(StrategyValidatorError::TypeError(self.clone()))
-            }
+            None if self.mandatory => Err(Error::MissingMandatoryParameter(self.clone())),
+            Some(param) if !self.kind.is_matching(param) => Err(Error::TypeError(self.clone())),
             _ => Ok(()),
         }
     }
@@ -61,14 +50,12 @@ impl StrategyValidator {
 pub fn parameter_exists(
     parameter_name: &String,
     validators: &Vec<StrategyValidator>,
-) -> Result<(), StrategyValidatorError> {
+) -> Result<(), Error> {
     validators
         .iter()
         .any(|v| v.name == *parameter_name)
         .then_some(())
-        .ok_or(StrategyValidatorError::UnknownParameter(
-            parameter_name.clone(),
-        ))
+        .ok_or(Error::UnknownParameter(parameter_name.clone()))
 }
 
 #[cfg(test)]
@@ -122,7 +109,7 @@ mod tests {
 
         use crate::core::{
             strategy_parameter::{StrategyParameter, StrategyParameterKind},
-            strategy_validator::{StrategyValidator, StrategyValidatorError},
+            strategy_validator::{Error, StrategyValidator},
         };
 
         #[test]
@@ -172,7 +159,7 @@ mod tests {
 
             assert_eq!(
                 validator.validate(&parameters),
-                Err(StrategyValidatorError::TypeError(StrategyValidator::new(
+                Err(Error::TypeError(StrategyValidator::new(
                     "valid-parameter",
                     StrategyParameterKind::Strategy,
                     false,
@@ -196,13 +183,11 @@ mod tests {
 
             assert_eq!(
                 validator.validate(&parameters),
-                Err(StrategyValidatorError::MissingMandatoryParameter(
-                    StrategyValidator::new(
-                        "valid-parameter",
-                        StrategyParameterKind::SingleString,
-                        true,
-                    )
-                ))
+                Err(Error::MissingMandatoryParameter(StrategyValidator::new(
+                    "valid-parameter",
+                    StrategyParameterKind::SingleString,
+                    true,
+                )))
             );
         }
     }
@@ -210,7 +195,7 @@ mod tests {
     mod test_parameter_exists {
         use crate::core::{
             strategy_parameter::StrategyParameterKind,
-            strategy_validator::{parameter_exists, StrategyValidator, StrategyValidatorError},
+            strategy_validator::{parameter_exists, Error, StrategyValidator},
         };
 
         #[test]
@@ -230,9 +215,7 @@ mod tests {
         fn should_return_err_if_validators_empty() {
             assert_eq!(
                 parameter_exists(&String::from("param-1"), &vec![]),
-                Err(StrategyValidatorError::UnknownParameter(String::from(
-                    "param-1"
-                )))
+                Err(Error::UnknownParameter(String::from("param-1")))
             );
         }
 
@@ -245,9 +228,7 @@ mod tests {
 
             assert_eq!(
                 parameter_exists(&String::from("param-3"), &validators),
-                Err(StrategyValidatorError::UnknownParameter(String::from(
-                    "param-3"
-                )))
+                Err(Error::UnknownParameter(String::from("param-3")))
             );
         }
     }
