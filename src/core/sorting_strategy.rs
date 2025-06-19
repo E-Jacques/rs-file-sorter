@@ -2,10 +2,9 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::sync::{Arc, Mutex};
 
+use crate::core::error::strategy_validator_error::Error;
 use crate::core::strategy_parameter::StrategyParameter;
-use crate::core::strategy_validator::{
-    parameter_exists, StrategyValidator, StrategyValidatorError,
-};
+use crate::core::strategy_validator::{parameter_exists, StrategyValidator};
 
 type SortingStrategyAction = fn(&File, &HashMap<String, StrategyParameter>) -> String;
 
@@ -58,7 +57,7 @@ impl SortingStrategy {
         }
     }
 
-    pub fn validate(&self) -> Result<(), StrategyValidatorError> {
+    pub fn validate(&self) -> Result<(), Error> {
         self.parameters
             .keys()
             .try_for_each(|name| parameter_exists(name, &self.validators))
@@ -83,9 +82,10 @@ impl SortingStrategy {
 mod test {
     mod test_sorting_strategy_validate {
         use crate::core::{
+            error::strategy_validator_error::Error,
             sorting_strategy::SortingStrategy,
             strategy_parameter::{StrategyParameter, StrategyParameterKind},
-            strategy_validator::{StrategyValidator, StrategyValidatorError},
+            strategy_validator::StrategyValidator,
         };
 
         #[test]
@@ -108,9 +108,7 @@ mod test {
 
             assert_eq!(
                 sorting_strategy.validate(),
-                Err(StrategyValidatorError::UnknownParameter(String::from(
-                    "unknown-param"
-                )))
+                Err(Error::UnknownParameter(String::from("unknown-param")))
             )
         }
 
@@ -139,7 +137,7 @@ mod test {
 
             assert_eq!(
                 sorting_strategy.validate(),
-                Err(StrategyValidatorError::TypeError(StrategyValidator::new(
+                Err(Error::TypeError(StrategyValidator::new(
                     "param-2",
                     StrategyParameterKind::Strategy,
                     false,
@@ -169,9 +167,11 @@ mod test {
 
             assert_eq!(
                 sorting_strategy.validate(),
-                Err(StrategyValidatorError::MissingMandatoryParameter(
-                    StrategyValidator::new("param-1", StrategyParameterKind::SingleString, true,)
-                ))
+                Err(Error::MissingMandatoryParameter(StrategyValidator::new(
+                    "param-1",
+                    StrategyParameterKind::SingleString,
+                    true,
+                )))
             )
         }
 
