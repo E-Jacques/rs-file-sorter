@@ -1,9 +1,9 @@
-use iced::{border::Radius, theme::Palette, Border, Color, Theme};
+use iced::{border::Radius, theme::Palette, Border, Color};
 
 use crate::ui::file_sorter_app::FileSorterApp;
 
-pub fn theme(_: &FileSorterApp) -> Theme {
-    Theme::custom(
+pub fn theme(_: &FileSorterApp) -> iced::Theme {
+    iced::Theme::custom(
         String::from("FileSorterTheme"),
         Palette {
             background: Color::WHITE,
@@ -27,7 +27,7 @@ pub struct ButtonPrimary {}
 
 impl ButtonPrimary {
     pub fn style(
-        theme: &Theme,
+        theme: &iced::Theme,
         status: iced::widget::button::Status,
     ) -> iced::widget::button::Style {
         let palette = theme.extended_palette();
@@ -42,7 +42,7 @@ pub struct ButtonSecondary {}
 
 impl ButtonSecondary {
     pub fn style(
-        theme: &Theme,
+        theme: &iced::Theme,
         status: iced::widget::button::Status,
     ) -> iced::widget::button::Style {
         iced::widget::button::secondary(theme, status)
@@ -53,7 +53,7 @@ pub struct TextInput {}
 
 impl TextInput {
     pub fn style(
-        theme: &Theme,
+        theme: &iced::Theme,
         status: iced::widget::text_input::Status,
     ) -> iced::widget::text_input::Style {
         let mut style = iced::widget::text_input::default(theme, status);
