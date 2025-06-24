@@ -8,7 +8,7 @@ use crate::{
         sorter::sorter,
         sorting_strategy::SortingStrategy,
         strategy_parameter::{StrategyParameter, StrategyParameterKind},
-        strategy_validator::{StrategyValidator, StrategyValidatorError},
+        strategy_validator::StrategyValidator,
     },
     sorting_strategies::{
         manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
@@ -27,30 +27,6 @@ pub static STACK: &str = "stack";
 
 static PARAMETER_SEP: &'static str = "=";
 
-enum DirectoryType {
-    Input,
-    Output,
-}
-
-impl DirectoryType {
-    fn as_str(self) -> &'static str {
-        match self {
-            DirectoryType::Input => "input",
-            DirectoryType::Output => "output",
-        }
-    }
-}
-
-enum SortCommandError {
-    WrongParamNumber(usize),
-    DirectoryNotFound(DirectoryType, String),
-    NotADirectory(String),
-    NoStrategyProvided,
-    MissingStrategyName,
-    UnknownStrategy(String, String),
-    InvalidStrategy(String, StrategyValidatorError),
-}
-
 impl SortingStrategy {
     pub fn get_validator(&self, name: &String) -> Option<&StrategyValidator> {
         self.validators
@@ -63,25 +39,14 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
     let sorting_strategies_list: StrategyCatalog =
         get_metadata_catalog().with(&get_manipulation_catalog());
 
-    match get_cli_inputs(args, params, STACK, sorting_strategies_list) {
-        Ok((input_dir, output_dir, sorting_strategies)) => {
-            let logger_borrowed = &logger.clone();
-            let rename_error_handler = |old_filename: &_, new_filename: &_| {
-                logger_borrowed.error(&format!(
-                    "unable to copy file {} to {}.",
-                    old_filename, new_filename
-                ));
-            };
-
-            sorter(
-                &input_dir,
-                &output_dir,
-                sorting_strategies,
-                logger,
-                &rename_error_handler.clone(),
-            )
-        }
+    match get_cli_inputs(args, params, STACK, sorting_strategies_list).and_then(
+        |(input_dir, output_dir, sorting_strategies)| {
+            sorter(&input_dir, &output_dir, sorting_strategies)
+                .map_err(super::error::Error::SorterError)
+        },
+    ) {
         Err(err) => handle_errors(&logger, err),
+        _ => (),
     };
 }
 
@@ -90,7 +55,7 @@ fn get_cli_inputs(
     params: Vec<String>,
     stack_arg_name: &str,
     sorting_strategies_list: StrategyCatalog,
-) -> Result<(String, String, Vec<SortingStrategy>), SortCommandError> {
+) -> Result<(String, String, Vec<SortingStrategy>), super::error::Error> {
     let (input, output) = get_directories(params)?;
     let stacks = get_stacks(args, stack_arg_name)?;
     let sorting_strategies = get_storting_strategies(stacks, sorting_strategies_list)?;
@@ -101,67 +66,48 @@ fn get_cli_inputs(
 fn get_stacks(
     args: Vec<ParsedArgs>,
     stack_arg_name: &str,
-) -> Result<Vec<ArgDatum>, SortCommandError> {
+) -> Result<Vec<ArgDatum>, super::error::Error> {
     match args.into_iter().find(|arg| arg.arg_name == stack_arg_name) {
         Some(sorting_stacks) => match sorting_stacks.arg_value {
-            ArgValue::NotProvided => Err(SortCommandError::NoStrategyProvided),
+            ArgValue::NotProvided => Err(super::error::Error::NoStrategyProvided),
             ArgValue::Multiple(stacks) => Ok(stacks),
             ArgValue::Single(stack) => Ok(vec![stack]),
         },
-        None => Err(SortCommandError::NoStrategyProvided),
+        None => Err(super::error::Error::NoStrategyProvided),
     }
 }
 
-fn handle_errors(logger: &Logger, err: SortCommandError) {
-    let message = match err {
-        SortCommandError::WrongParamNumber(len) => format!("expected 2 params, got {}.", len),
-        SortCommandError::DirectoryNotFound(directory_type, relative_path) => format!(
-            "{} directory '{}' don't exists",
-            directory_type.as_str(),
-            relative_path
-        ),
-        SortCommandError::NotADirectory(relative_path) => {
-            format!("'{}' isn't a directory", relative_path)
-        }
-        SortCommandError::MissingStrategyName => {
-            "A value needs to be assigned to the stack argument.".to_string()
-        }
-        SortCommandError::NoStrategyProvided => "stack argument haven't been provided.".to_string(),
-        SortCommandError::UnknownStrategy(name, all_strategy_names) => format!(
-            "Unexpected stack value. Got '{}', expected one of: {}.",
-            name, all_strategy_names
-        ),
-        SortCommandError::InvalidStrategy(strategy_name, strategy_validator_error) => match strategy_validator_error {
-            StrategyValidatorError::MissingMandatoryParameter(strategy_validator) => format!("An error occurred for {} strategy. The following mandatory parameter is missing: {}.", strategy_name, strategy_validator.name),
-            StrategyValidatorError::UnknownParameter(parameter_name) => format!("An error occurred for {} strategy. The parameter is unknown: {}.", strategy_name, parameter_name),
-            StrategyValidatorError::TypeError(strategy_validator) => format!("An error occurred for {} strategy. The following parameter doesn't have the expected type: expecting {}.", strategy_name, strategy_validator.kind),
-        },
-    };
-
-    logger.error(&message);
+fn handle_errors(logger: &Logger, err: super::error::Error) {
+    logger.error(&err.to_string());
 }
 
-fn get_directories(params: Vec<String>) -> Result<(String, String), SortCommandError> {
-    fn validate_directory(path: &String, dir_type: DirectoryType) -> Result<(), SortCommandError> {
+fn get_directories(params: Vec<String>) -> Result<(String, String), super::error::Error> {
+    fn validate_directory(
+        path: &String,
+        dir_type: super::error::DirectoryType,
+    ) -> Result<(), super::error::Error> {
         let relative_path = to_relative_path(path.clone());
         if !file_or_dir_exists(path.into()) {
-            Err(SortCommandError::DirectoryNotFound(dir_type, relative_path))
+            Err(super::error::Error::DirectoryNotFound(
+                dir_type,
+                relative_path,
+            ))
         } else if !metadata(path).map(|m| m.is_dir()).unwrap_or(false) {
-            Err(SortCommandError::NotADirectory(relative_path))
+            Err(super::error::Error::NotADirectory(relative_path))
         } else {
             Ok(())
         }
     }
 
     if params.len() != 2 {
-        return Err(SortCommandError::WrongParamNumber(params.len()));
+        return Err(super::error::Error::WrongParamNumber(params.len()));
     }
 
     let input_dir = to_absolute_path(params[0].clone());
-    validate_directory(&input_dir, DirectoryType::Input)?;
+    validate_directory(&input_dir, super::error::DirectoryType::Input)?;
 
     let output_dir = to_absolute_path(params[1].clone());
-    validate_directory(&output_dir, DirectoryType::Output)?;
+    validate_directory(&output_dir, super::error::DirectoryType::Output)?;
 
     Ok((input_dir, output_dir))
 }
@@ -169,7 +115,7 @@ fn get_directories(params: Vec<String>) -> Result<(String, String), SortCommandE
 fn get_storting_strategies(
     stacks: Vec<ArgDatum>,
     strategy_catalog: StrategyCatalog,
-) -> Result<Vec<SortingStrategy>, SortCommandError> {
+) -> Result<Vec<SortingStrategy>, super::error::Error> {
     let all_strategy_names = strategy_catalog.get_names().join(", ");
 
     stacks
@@ -178,15 +124,11 @@ fn get_storting_strategies(
             let name = arg_datum
                 .value
                 .clone()
-                .ok_or(SortCommandError::MissingStrategyName)?;
+                .ok_or(super::error::Error::MissingStrategyName)?;
 
-            let mut strategy =
-                strategy_catalog
-                    .get_strategy(&name)
-                    .ok_or(SortCommandError::UnknownStrategy(
-                        name.clone(),
-                        all_strategy_names.clone(),
-                    ))?;
+            let mut strategy = strategy_catalog.get_strategy(&name).ok_or(
+                super::error::Error::UnknownStrategy(name.clone(), all_strategy_names.clone()),
+            )?;
 
             if let Some(parsed_arg) = arg_datum.get_child(PARAMETER) {
                 for (key, value) in &get_parameters_from_parsed_args(parsed_arg) {
@@ -199,10 +141,6 @@ fn get_storting_strategies(
                     }
                 }
             }
-
-            strategy
-                .validate()
-                .map_err(|err| SortCommandError::InvalidStrategy(name, err))?;
 
             Ok(strategy)
         })

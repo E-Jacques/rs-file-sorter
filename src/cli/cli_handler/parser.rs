@@ -29,8 +29,22 @@ pub enum ArgValue {
 }
 
 #[derive(Debug)]
-pub enum ParserError {
+pub enum Error {
     UnkownArgument(ParsedArgs),
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::UnkownArgument(arg) => write!(f, "Unknown argument: {}", arg.arg_name),
+        }
+    }
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    }
 }
 
 impl From<ArgValue> for ArgValueTypes {
@@ -111,7 +125,7 @@ pub fn parse_cli(
     command: Vec<String>,
     command_handler: &CliHandlerCommand,
     arg_prefix: String,
-) -> Result<ParsedCommand, ParserError> {
+) -> Result<ParsedCommand, Error> {
     let mut parsed_command = parse_parameters_and_args(&command, arg_prefix);
     match handle_nested_arguments(command_handler, parsed_command.args) {
         Ok(arguments) => {
@@ -251,7 +265,7 @@ fn add_not_provided_but_expected_args(
 fn handle_nested_arguments(
     command_handler: &CliHandlerCommand,
     args: Vec<ParsedArgs>,
-) -> Result<Vec<ParsedArgs>, ParserError> {
+) -> Result<Vec<ParsedArgs>, Error> {
     let mut new_args: Vec<ParsedArgs> = vec![];
     for arg in args {
         let maybe_arg_spec = command_handler.args.iter().find(|a| a.name == arg.arg_name);
@@ -271,7 +285,7 @@ fn handle_nested_arguments(
                     new_args.push(arg.clone());
                 }
             }
-            None => return Err(ParserError::UnkownArgument(arg)),
+            None => return Err(Error::UnkownArgument(arg)),
         }
     }
 

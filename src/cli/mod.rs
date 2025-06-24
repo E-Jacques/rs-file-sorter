@@ -5,6 +5,7 @@ use crate::{cli::sort_command::{PARAMETER, STACK}, utils::logger::Logger};
 
 mod cli_handler;
 pub mod sort_command;
+pub mod error;
 
 /**
  * Use to write e2e tests.
