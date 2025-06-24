@@ -2,10 +2,25 @@ use crate::utils::logger::Logger;
 
 use super::{cli_handler_builder::ArgValueTypes, parser::ParsedCommand};
 
-pub enum ArgValidationErrorEnum {
-    NoError,
+#[derive(Debug)]
+pub enum Error {
     UnknownArgument,
     UnexpectedValue(ArgValueTypes),
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::UnknownArgument => write!(f, "Unknown argument provided"),
+            Error::UnexpectedValue(value) => write!(f, "Unexpected value: {:?}", value),
+        }
+    }
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -24,7 +39,7 @@ pub struct ArgBuilder {
 }
 
 impl ArgBuilder {
-    pub fn validate(&self, parsed_command: ParsedCommand) -> ArgValidationErrorEnum {
+    pub fn validate(&self, parsed_command: ParsedCommand) -> Result<(), Error> {
         let parsed_arg = match parsed_command
             .args
             .into_iter()
@@ -32,25 +47,25 @@ impl ArgBuilder {
         {
             Some(parsed_arg) => parsed_arg,
             None => {
-                return ArgValidationErrorEnum::UnknownArgument;
+                return Err(Error::UnknownArgument);
             }
         };
 
         // FIXME: add recursive validation
         if self.parent_name.is_some() {
-            return ArgValidationErrorEnum::NoError;
+            return Ok(());
         }
 
         let parsed_arg_type_accepted = self.expected_value_type.iter().any(|expected_value| {
             ArgValueTypes::from(parsed_arg.arg_value.clone()) == *expected_value
         });
         if !parsed_arg_type_accepted {
-            return ArgValidationErrorEnum::UnexpectedValue(ArgValueTypes::from(
+            return Err(Error::UnexpectedValue(ArgValueTypes::from(
                 parsed_arg.arg_value,
-            ));
+            )));
         }
 
-        ArgValidationErrorEnum::NoError
+        Ok(())
     }
 }
 
