@@ -1,5 +1,5 @@
 use iced::{
-    widget::{column, scrollable},
+    widget::{column, container, scrollable, Column},
     Element, Length,
 };
 
@@ -8,8 +8,10 @@ use crate::{
     sorting_strategies::{
         manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
     },
-    ui::widgets::buttons::primary_button::primary_button,
-    utils::logger::Logger,
+    ui::widgets::{
+        alert::{alert, AlertSeverity},
+        buttons::primary_button::primary_button,
+    },
 };
 
 use super::widgets::{directory_input, editable_tree};
@@ -21,6 +23,7 @@ pub struct FileSorterApp {
     editable_file_tree: editable_tree::editable_tree::EditableTree,
     directory_input: directory_input::DirectoryInput,
     directory_output: directory_input::DirectoryInput,
+    log_messages: Vec<LogMessage>,
 }
 
 #[derive(Debug, Clone)]
@@ -29,6 +32,21 @@ pub enum Message {
     OutputPathChanged(directory_input::DirectoryInputMessage),
     EditableFileTreeMessage(editable_tree::shared::TreeMessage),
     Sort,
+}
+
+#[derive(Debug, Clone)]
+pub enum LogMessage {
+    Warning(String),
+    Error(String),
+}
+
+impl Into<AlertSeverity> for &LogMessage {
+    fn into(self) -> AlertSeverity {
+        match self {
+            LogMessage::Warning(_) => AlertSeverity::Warning,
+            LogMessage::Error(_) => AlertSeverity::Error,
+        }
+    }
 }
 
 impl Default for FileSorterApp {
@@ -48,19 +66,35 @@ impl FileSorterApp {
             ),
             directory_input: directory_input::DirectoryInput::new(None, "Input path".to_string()),
             directory_output: directory_input::DirectoryInput::new(None, "Output path".to_string()),
+            log_messages: vec![],
         }
     }
 
-    fn sort(&self) {
-        sorter::sorter(
+    fn sort(&mut self) {
+        self.log_messages.clear();
+        match sorter::sorter(
             &self.input_path,
             &self.output_path,
             self.sorting_strategies.clone(),
-            Logger::new("File sorter App", true),
-            |old, new| {
-                println!("Error renaming file from {} to {}", old, new);
-            },
-        );
+        ) {
+            Err(e) => {
+                self.log_messages.push(LogMessage::Error(e.to_string()));
+            }
+            Ok(reports) => {
+                for report in reports {
+                    match report.result {
+                        Err(e) => {
+                            self.log_messages.push(LogMessage::Warning(format!(
+                                "Error processing file {}: {}",
+                                report.input_dir.display(),
+                                e
+                            )));
+                        }
+                        _ => (),
+                    }
+                }
+            }
+        }
     }
 
     pub fn view(&self) -> Element<'_, Message> {
@@ -83,9 +117,27 @@ impl FileSorterApp {
             .on_press(Message::Sort)
             .width(Length::Fill);
 
-        let content = column![input_path, output_path, output_path_tree, sort_button]
-            .padding(20)
-            .spacing(10);
+        let alert_list: Vec<Element<'_, Message>> = self
+            .log_messages
+            .iter()
+            .map(|msg| match msg.clone() {
+                LogMessage::Warning(text) | LogMessage::Error(text) => {
+                    alert(msg.into(), text.clone()).into()
+                }
+            })
+            .collect();
+
+        let content = column![
+            container(scrollable(Column::from_vec(alert_list).spacing(4)))
+                .height(Length::Shrink)
+                .max_height(200.0),
+            input_path,
+            output_path,
+            output_path_tree,
+            sort_button
+        ]
+        .padding(20)
+        .spacing(10);
 
         scrollable(content)
             .width(Length::Fill)
