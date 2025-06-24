@@ -17,7 +17,7 @@ path = "src/bin/rsfs_app.rs"
 [dependencies]
 chrono = { version = "0.4.31", features = ["unstable-locales"] }
 filetime = "0.2.22"
-iced = "0.13.1"
+iced = { version = "0.13.1", features = ["advanced"] }
 rand = "0.9.1"
 regex = "1.10.2"
 rfd = "0.15.3"
