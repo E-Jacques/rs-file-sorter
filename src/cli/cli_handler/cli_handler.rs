@@ -1,7 +1,7 @@
 use crate::utils::logger::Logger;
 
 use super::{
-    compound_structs::{ArgBuilder, ArgValidationErrorEnum, ParamBuilder},
+    compound_structs::{self, ArgBuilder, ParamBuilder},
     parser::{parse_cli, ParsedCommand},
 };
 
@@ -94,7 +94,7 @@ impl CliHandler {
                 command_handler_fn(&parsed_command.clone(), &command_handler.logger)
             }
             Err(parser_error) => match parser_error {
-                super::parser::ParserError::UnkownArgument(parsed_args) => {
+                super::parser::Error::UnkownArgument(parsed_args) => {
                     command_handler.logger.error(&format!(
                         "unknown argument: got '{}' when expecting {}. See 'help' to get more informations.",
                         parsed_args.arg_name, command_handler.args.iter().map(|arg_spec| arg_spec.name.clone()).collect::<Vec<String>>().join(", ")
@@ -192,17 +192,14 @@ impl CliHandler {
 
         for arg in command_specification.args.clone().into_iter() {
             match arg.validate(parsed_command.clone()) {
-                ArgValidationErrorEnum::NoError => {
-                    continue;
-                }
-                ArgValidationErrorEnum::UnknownArgument => {
+                Err(compound_structs::Error::UnknownArgument) => {
                     command_specification.logger.error(&format!(
                         "unknown argument: got '{}' when expecting {}. See 'help' to get more informations.",
                         arg.name, arg_specification_names.join(", ")
                     ));
                     return Some(false);
                 }
-                ArgValidationErrorEnum::UnexpectedValue(received_value) => {
+                Err(compound_structs::Error::UnexpectedValue(received_value)) => {
                     let possible_values = arg.clone().expected_value_type;
                     let possible_values_string = possible_values
                         .into_iter()
@@ -216,6 +213,7 @@ impl CliHandler {
                     ));
                     return Some(false);
                 }
+                _ => (),
             }
         }
 
