@@ -52,15 +52,8 @@ pub fn get_last_modified_time(file: &File) -> Result<DateTime<Local>, io::Error>
 
 pub fn move_file(from: PathBuf, to: PathBuf, create_dir_if_missing: bool) -> io::Result<()> {
     if create_dir_if_missing {
-        let to_parent_dir = match to.parent() {
-            Some(value) => value,
-            None => Path::new("/"),
-        };
-
-        match fs::create_dir_all(to_parent_dir) {
-            Ok(_) => (),
-            Err(io_error) => return Err(io_error),
-        };
+        let to_parent_dir = to.parent().unwrap_or(Path::new("/"));
+        fs::create_dir_all(to_parent_dir)?;
     }
 
     fs::rename(from, to)
