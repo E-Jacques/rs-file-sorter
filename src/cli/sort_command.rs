@@ -5,7 +5,7 @@ use rsft_utils::common::file_or_dir_exists;
 use crate::{
     cli::cli_handler::parser::ArgDatum,
     core::{
-        sorter::sorter,
+        sorter::{self, sorter, SorterReport},
         sorting_strategy::SortingStrategy,
         strategy_parameter::{StrategyParameter, StrategyParameterKind},
         strategy_validator::StrategyValidator,
@@ -23,9 +23,28 @@ use crate::{
 use super::cli_handler::parser::{ArgValue, ParsedArgs};
 
 pub static PARAMETER: &str = "parameter";
+pub static DRY_RUN: &str = "dry-run";
 pub static STACK: &str = "stack";
 
 static PARAMETER_SEP: &'static str = "=";
+
+impl std::fmt::Display for SorterReport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.result {
+            Ok(target) => {
+                write!(
+                    f,
+                    "{} -> {}",
+                    self.input_filename.display(),
+                    target.display()
+                )
+            }
+            Err(err) => {
+                write!(f, "{} -x {}", self.input_filename.display(), err)
+            }
+        }
+    }
+}
 
 impl SortingStrategy {
     pub fn get_validator(&self, name: &String) -> Option<&StrategyValidator> {
@@ -38,14 +57,29 @@ impl SortingStrategy {
 pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Logger) {
     let sorting_strategies_list: StrategyCatalog =
         get_metadata_catalog().with(&get_manipulation_catalog());
+    println!("{:?}", args);
+
+    let dry_run: bool = args
+        .iter()
+        .any(|a| a.arg_name == DRY_RUN.to_string() && a.arg_value != ArgValue::NotProvided);
 
     match get_cli_inputs(args, params, STACK, sorting_strategies_list).and_then(
         |(input_dir, output_dir, sorting_strategies)| {
-            sorter(&input_dir, &output_dir, sorting_strategies)
-                .map_err(super::error::Error::SorterError)
+            sorter(
+                &input_dir,
+                &output_dir,
+                sorting_strategies,
+                &sorter::SortOptions { dry_run },
+            )
+            .map_err(super::error::Error::SorterError)
         },
     ) {
         Err(err) => handle_errors(&logger, err),
+        Ok(reports) if dry_run => {
+            for report in reports {
+                println!("{}", report)
+            }
+        }
         _ => (),
     };
 }

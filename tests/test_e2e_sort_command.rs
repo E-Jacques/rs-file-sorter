@@ -1,6 +1,9 @@
 #[cfg(test)]
 pub mod tests_e2e_sort_command {
-    use std::{fs, path::Path};
+    use std::{
+        fs::{self, read_dir},
+        path::Path,
+    };
 
     use rs_file_sorter::cli::handle;
     use rsft_utils::{
@@ -319,5 +322,44 @@ pub mod tests_e2e_sort_command {
             ),
             Some(true),
         );
+    }
+
+    #[test]
+    fn test_using_dry_run() {
+        // set filenames
+        let files = vec![
+            FileCreator::from("file_2022-02-22_F1BDD782"),
+            FileCreator::from("file_2022-10-20_6FC02130"),
+            FileCreator::from("file_2023-10-20_9E387272"),
+        ];
+
+        let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_7");
+
+        // define input_dir
+        let input_dir = common_dir.clone().join("input_dir");
+        clean_or_create_dir(input_dir.clone())
+            .expect("Should be able to clean or create directory before running test");
+
+        // define output dir
+        let output_dir = common_dir.clone().join("output_dir");
+        clean_or_create_dir(output_dir.clone())
+            .expect("Should be able to clean or create directory before running test");
+
+        // generate files in input directory
+        generate_test_files(&input_dir, files).expect("Unable to generate the test files!");
+
+        let final_input_dir = input_dir.clone().to_str().unwrap().to_string();
+        let final_output_dir = output_dir.clone().to_str().unwrap().to_string();
+        handle(
+            format!(
+                "sort --dry-run --stack year --stack month {} {}",
+                final_input_dir.clone(),
+                final_output_dir.clone()
+            ),
+            Some(false),
+        );
+
+        assert_eq!(read_dir(input_dir).unwrap().count(), 3);
+        assert_eq!(read_dir(output_dir).unwrap().count(), 0);
     }
 }
