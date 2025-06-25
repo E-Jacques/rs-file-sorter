@@ -1,7 +1,7 @@
 use cli_handler::cli_handler_builder::{ArgValueTypes, CliHandlerBuilder};
 use sort_command::exec_sort_command;
 
-use crate::{cli::sort_command::{PARAMETER, STACK}, utils::logger::Logger};
+use crate::{cli::sort_command::{DRY_RUN, PARAMETER, STACK}, utils::logger::Logger};
 
 mod cli_handler;
 pub mod sort_command;
@@ -28,6 +28,11 @@ pub fn handle(input: String, debug_mode: Option<bool>) {
         PARAMETER.to_string(), 
         String::from("associate a parameter the the parent stack using a 'KEY=VALUE' format."), 
         vec![ArgValueTypes::Single, ArgValueTypes::Multiple]
+    )
+    .argument(
+        DRY_RUN.to_string(), 
+    "Output a report without actually applying it to the files.".to_string(), 
+    vec![ArgValueTypes::NoValue]
     )
     .parameter(
         String::from("from"), String::from("the directory from which you need to extract the files.")

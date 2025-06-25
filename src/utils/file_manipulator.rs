@@ -50,7 +50,7 @@ pub fn get_last_modified_time(file: &File) -> Result<DateTime<Local>, io::Error>
     Ok(system_time.into())
 }
 
-pub fn move_file(from: PathBuf, to: PathBuf, create_dir_if_missing: bool) -> io::Result<()> {
+pub fn move_file(from: &PathBuf, to: &PathBuf, create_dir_if_missing: bool) -> io::Result<()> {
     if create_dir_if_missing {
         let to_parent_dir = to.parent().unwrap_or(Path::new("/"));
         fs::create_dir_all(to_parent_dir)?;
