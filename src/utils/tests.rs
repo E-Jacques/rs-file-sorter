@@ -125,7 +125,7 @@ mod file_manipulator_tests {
             let _ = fs::write(from.clone(), "my content");
 
             // function to test
-            match move_file(from, to.clone(), false) {
+            match move_file(&from, &to.clone(), false) {
                 Err(_) => {
                     // fail
                     assert!(false)
@@ -168,7 +168,7 @@ mod file_manipulator_tests {
             let _ = fs::write(from.clone(), "my content");
 
             // function to test
-            match move_file(from.clone(), to.clone(), false) {
+            match move_file(&from.clone(), &to.clone(), false) {
                 Err(_) => {
                     fs::remove_file(from).expect("Should be able to delete test file");
                     assert!(true)
@@ -203,7 +203,7 @@ mod file_manipulator_tests {
             let _ = fs::write(from.clone(), "my content");
 
             // function to test
-            match move_file(from, to.clone(), true) {
+            match move_file(&from, &to.clone(), true) {
                 Err(_) => {
                     // fail
                     assert!(false)

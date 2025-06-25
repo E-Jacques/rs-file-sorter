@@ -1,16 +1,23 @@
 use iced::{
-    widget::{column, container, scrollable, Column},
+    widget::{column, container, row, scrollable, Column},
     Element, Length,
 };
 
 use crate::{
-    core::{sorter, sorting_strategy::SortingStrategy},
+    core::{
+        sorter::{self, move_files_from_report},
+        sorting_strategy::SortingStrategy,
+    },
     sorting_strategies::{
         manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
     },
-    ui::widgets::{
-        alert::{alert, AlertSeverity},
-        buttons::primary_button::primary_button,
+    ui::{
+        screen::tree_preview::{self, TreePreview},
+        widgets::{
+            alert::{alert, AlertSeverity},
+            buttons::primary_button::primary_button,
+            option_form::{self, OptionForm},
+        },
     },
 };
 
@@ -20,6 +27,8 @@ pub struct FileSorterApp {
     input_path: String,
     output_path: String,
     sorting_strategies: Vec<SortingStrategy>,
+    option_form: OptionForm,
+    tree_preview: Option<TreePreview>,
     editable_file_tree: editable_tree::editable_tree::EditableTree,
     directory_input: directory_input::DirectoryInput,
     directory_output: directory_input::DirectoryInput,
@@ -31,6 +40,8 @@ pub enum Message {
     InputPathChanged(directory_input::DirectoryInputMessage),
     OutputPathChanged(directory_input::DirectoryInputMessage),
     EditableFileTreeMessage(editable_tree::shared::TreeMessage),
+    OptionFormMessage(option_form::Message),
+    TreePreviewMessage(tree_preview::Message),
     Sort,
 }
 
@@ -61,6 +72,8 @@ impl FileSorterApp {
             input_path: String::new(),
             output_path: String::new(),
             sorting_strategies: vec![],
+            option_form: OptionForm::new(),
+            tree_preview: None,
             editable_file_tree: editable_tree::editable_tree::EditableTree::new(
                 get_metadata_catalog().with(&get_manipulation_catalog()),
             ),
@@ -72,26 +85,37 @@ impl FileSorterApp {
 
     fn sort(&mut self) {
         self.log_messages.clear();
+        let options = self.option_form.get_options();
         match sorter::sorter(
             &self.input_path,
             &self.output_path,
             self.sorting_strategies.clone(),
+            &options,
         ) {
             Err(e) => {
                 self.log_messages.push(LogMessage::Error(e.to_string()));
             }
             Ok(reports) => {
-                for report in reports {
-                    match report.result {
-                        Err(e) => {
-                            self.log_messages.push(LogMessage::Warning(format!(
-                                "Error processing file {}: {}",
-                                report.input_dir.display(),
-                                e
-                            )));
-                        }
-                        _ => (),
+                self.handle_report(options, reports);
+            }
+        }
+    }
+
+    fn handle_report(&mut self, options: sorter::SortOptions, reports: Vec<sorter::SorterReport>) {
+        self.log_messages.clear();
+        if options.dry_run {
+            self.tree_preview = Some(TreePreview::new(reports));
+        } else {
+            for report in reports {
+                match report.result {
+                    Err(e) => {
+                        self.log_messages.push(LogMessage::Warning(format!(
+                            "Error processing file {}: {}",
+                            report.input_filename.display(),
+                            e
+                        )));
                     }
+                    _ => (),
                 }
             }
         }
@@ -133,16 +157,22 @@ impl FileSorterApp {
                 .max_height(200.0),
             input_path,
             output_path,
+            self.option_form.view().map(Message::OptionFormMessage),
             output_path_tree,
             sort_button
         ]
         .padding(20)
         .spacing(10);
 
-        scrollable(content)
-            .width(Length::Fill)
-            .height(Length::Shrink)
-            .into()
+        row![scrollable(content)
+            .width(Length::Fixed(400.0))
+            .height(Length::Shrink)]
+        .push_maybe(
+            self.tree_preview
+                .as_ref()
+                .map(|tree_preview| tree_preview.view().map(Message::TreePreviewMessage)),
+        )
+        .into()
     }
 
     pub fn update(&mut self, message: Message) {
@@ -170,6 +200,16 @@ impl FileSorterApp {
             Message::EditableFileTreeMessage(m) => {
                 self.editable_file_tree.update(m);
             }
+            Message::OptionFormMessage(option_form_message) => {
+                self.option_form.update(option_form_message);
+            }
+            Message::TreePreviewMessage(message) if message == tree_preview::Message::Apply => {
+                if let Some(tree_preview) = &self.tree_preview {
+                    let new_report = move_files_from_report(tree_preview.pending_reports.clone());
+                    self.handle_report(self.option_form.get_options(), new_report);
+                }
+            }
+            _ => (),
         }
     }
 }
