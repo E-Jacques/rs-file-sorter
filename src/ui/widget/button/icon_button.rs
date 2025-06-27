@@ -1,6 +1,6 @@
 use iced::widget::button;
 
-use crate::ui::{custom_theme, widgets::icon};
+use crate::ui::{custom_theme, widget::icon};
 
 pub fn icon_button<'a, M>(icon: &'a str) -> button::Button<'a, M>
 where
