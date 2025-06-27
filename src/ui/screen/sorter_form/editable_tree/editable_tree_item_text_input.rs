@@ -1,9 +1,8 @@
 use iced::{widget, Element};
 
-use crate::ui::{
-    custom_theme,
-    widgets::editable_tree::shared::{StringParameterInput, TreeTextInputMessage},
-};
+use crate::ui::custom_theme;
+
+use super::shared::{StringParameterInput, TreeTextInputMessage};
 
 #[derive(Debug, Clone)]
 pub struct EditableTreeItemTextInput {
