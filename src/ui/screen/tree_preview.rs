@@ -5,10 +5,16 @@ use std::{
 
 use iced::{
     widget::{column, container, row, Column, Text},
-    Length,
+    Length, Padding,
 };
 
-use crate::{core::sorter::FullSorterReport, ui::custom_theme};
+use crate::{
+    core::sorter::FullSorterReport,
+    ui::{
+        custom_theme,
+        widgets::{alert::alert, icon},
+    },
+};
 
 pub struct TreePreview {
     root_node: Node,
@@ -151,27 +157,49 @@ impl TreePreview {
 
     pub fn view(&self) -> iced::Element<'_, Message> {
         let tree_representation: iced::Element<'_, Message> =
-            self.render_node(&self.root_node, 0).into();
+            self.render_node(&self.root_node, 0.0).into();
 
-        container(column![
-            row![
-                iced::widget::text("Sorter Report").width(Length::Fill),
-                iced::widget::button("Apply")
-                    .on_press(Message::Apply)
-                    .style(custom_theme::ButtonPrimary::style)
-            ],
-            iced::widget::text(DESCRIPTION).width(Length::Fill),
-            tree_representation
-        ])
+        container(
+            column![
+                row![
+                    iced::widget::text("Sorter Report").width(Length::Fill),
+                    iced::widget::button("Apply")
+                        .on_press(Message::Apply)
+                        .style(custom_theme::ButtonPrimary::style)
+                ]
+                .align_y(iced::Alignment::Center),
+                alert(
+                    crate::ui::widgets::alert::AlertSeverity::Info,
+                    DESCRIPTION.to_string()
+                ),
+                tree_representation
+            ]
+            .spacing(8),
+        )
         .padding(16)
         .into()
     }
 
-    fn render_node<'a>(&self, node: &'a Node, indent: usize) -> Column<'a, Message> {
+    fn render_node<'a>(&self, node: &'a Node, indent: f32) -> Column<'a, Message> {
         let mut col = Column::new().spacing(2);
 
+        let icon = match node.node_type {
+            NodeType::File => icon::icon(icon::FILE),
+            NodeType::Directory => icon::icon(icon::FOLDER_OPENED),
+            NodeType::Other => Text::new("[?]"),
+        };
+        let left_padding: f32 = 24.0 * indent;
         // Add current node's name
-        col = col.push(Text::new(format!("{}{}", "  ".repeat(indent), node.name)));
+        col = col.push(
+            row![icon, Text::new(node.name.clone())]
+                .spacing(4)
+                .padding(Padding {
+                    top: 0.0,
+                    right: 0.0,
+                    bottom: 0.0,
+                    left: left_padding,
+                }),
+        );
 
         // Sort children for left-to-right consistency
         let mut sorted_keys: Vec<_> = node.children.keys().collect();
@@ -180,7 +208,7 @@ impl TreePreview {
         // Recursively add child nodes
         for key in sorted_keys {
             let child = &node.children[key];
-            col = col.push(self.render_node(child, indent + 1));
+            col = col.push(self.render_node(child, indent + 1.0));
         }
 
         col.into()
