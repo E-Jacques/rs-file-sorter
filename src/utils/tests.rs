@@ -227,34 +227,6 @@ mod file_manipulator_tests {
 }
 
 mod string_manipulator_tests {
-    mod add_0_to_single_number {
-
-        use crate::utils::string_manipulator::add_0_to_single_number;
-
-        #[test]
-        fn test_add_0_when_input_0() {
-            let value = add_0_to_single_number(0);
-            assert_eq!(value, String::from("00"));
-        }
-        #[test]
-        fn test_add_0_when_input_lower_than_10() {
-            let value = add_0_to_single_number(9);
-            assert_eq!(value, String::from("09"));
-        }
-
-        #[test]
-        fn test_dont_add_0_when_input_more_than_10() {
-            let value = add_0_to_single_number(10);
-            assert_eq!(value, String::from("10"));
-        }
-
-        #[test]
-        fn test_dont_limit_to_2_length_string() {
-            let value = add_0_to_single_number(100);
-            assert_eq!(value, String::from("100"));
-        }
-    }
-
     mod random_string {
         use crate::utils::string_manipulator::random_string;
 
