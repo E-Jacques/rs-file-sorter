@@ -5,7 +5,7 @@ use iced::{
 
 use crate::ui::{
     custom_theme,
-    widgets::icon::{self, icon},
+    widget::icon::{self, icon},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

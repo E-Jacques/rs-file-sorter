@@ -13,20 +13,18 @@ use crate::{
     sorting_strategies::strategy_catalog::StrategyCatalog,
     ui::{
         custom_theme,
-        widgets::{
-            buttons::icon_button::icon_button,
-            editable_tree::{
-                editable_tree::EditableTree,
-                editable_tree_item_combo_box::EditableTreeItemComboBox,
-                editable_tree_item_text_input::EditableTreeItemTextInput,
-                shared::{StringParameterInput, TreeInputMessage},
-            },
-            icon,
-        },
+        widget::{button::icon_button::icon_button, icon},
     },
 };
 
-use super::shared::{DirectoryMovement, StrategyOptions, TreeItemMessage};
+use super::{
+    editable_tree::EditableTree,
+    editable_tree_item_combo_box::EditableTreeItemComboBox,
+    editable_tree_item_text_input::EditableTreeItemTextInput,
+    shared::{
+        DirectoryMovement, StrategyOptions, StringParameterInput, TreeInputMessage, TreeItemMessage,
+    },
+};
 
 #[derive(Debug, Clone)]
 enum ChildElement {

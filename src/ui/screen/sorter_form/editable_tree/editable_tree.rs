@@ -4,7 +4,7 @@ use iced::{widget::column, Element, Length};
 
 use crate::{
     core::sorting_strategy::SortingStrategy, sorting_strategies::strategy_catalog::StrategyCatalog,
-    ui::widgets::buttons::primary_button::primary_button, utils::string_manipulator::random_string,
+    ui::widget::button::primary_button::primary_button, utils::string_manipulator::random_string,
 };
 
 use super::{
