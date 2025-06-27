@@ -1,54 +1,37 @@
-use iced::{
-    widget::{column, container, row, scrollable, Column},
-    Element, Length,
-};
+use iced::{widget::row, Element};
 
 use crate::{
-    core::{
-        sorter::{self, move_files_from_report},
-        sorting_strategy::SortingStrategy,
-    },
-    sorting_strategies::{
-        manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
-    },
+    core::sorter::{self, move_files_from_report, FullSorterReport},
     ui::{
-        screen::tree_preview::{self, TreePreview},
-        widgets::{
-            alert::{alert, AlertSeverity},
-            buttons::primary_button::primary_button,
-            option_form::{self, OptionForm},
+        screen::{
+            sorter_form::{self, SortPayload, SorterForm},
+            tree_preview::{self, TreePreview},
         },
+        widget::alert::AlertSeverity,
     },
 };
 
-use super::widgets::{directory_input, editable_tree};
-
 pub struct FileSorterApp {
-    input_path: String,
-    output_path: String,
-    sorting_strategies: Vec<SortingStrategy>,
-    option_form: OptionForm,
+    sorter_form: SorterForm,
     tree_preview: Option<TreePreview>,
-    editable_file_tree: editable_tree::editable_tree::EditableTree,
-    directory_input: directory_input::DirectoryInput,
-    directory_output: directory_input::DirectoryInput,
-    log_messages: Vec<LogMessage>,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    InputPathChanged(directory_input::DirectoryInputMessage),
-    OutputPathChanged(directory_input::DirectoryInputMessage),
-    EditableFileTreeMessage(editable_tree::shared::TreeMessage),
-    OptionFormMessage(option_form::Message),
     TreePreviewMessage(tree_preview::Message),
-    Sort,
+    SorterFormMessage(sorter_form::Message),
 }
 
 #[derive(Debug, Clone)]
 pub enum LogMessage {
     Warning(String),
     Error(String),
+}
+
+#[derive(Debug, Clone)]
+pub enum EventWrapper {
+    SorterFormEvent(sorter_form::Event),
+    TreePreviewEvent(tree_preview::Event),
 }
 
 impl Into<AlertSeverity> for &LogMessage {
@@ -69,147 +52,88 @@ impl Default for FileSorterApp {
 impl FileSorterApp {
     pub fn new() -> Self {
         FileSorterApp {
-            input_path: String::new(),
-            output_path: String::new(),
-            sorting_strategies: vec![],
-            option_form: OptionForm::new(),
+            sorter_form: SorterForm::default(),
             tree_preview: None,
-            editable_file_tree: editable_tree::editable_tree::EditableTree::new(
-                get_metadata_catalog().with(&get_manipulation_catalog()),
-            ),
-            directory_input: directory_input::DirectoryInput::new(None, "Input path".to_string()),
-            directory_output: directory_input::DirectoryInput::new(None, "Output path".to_string()),
-            log_messages: vec![],
         }
     }
 
-    fn sort(&mut self) {
-        self.log_messages.clear();
-        let options = self.option_form.get_options();
+    fn sort(&mut self, sort_payload: SortPayload) {
+        let mut log_messages: Vec<LogMessage> = vec![];
+
         match sorter::sorter(
-            &self.input_path,
-            &self.output_path,
-            self.sorting_strategies.clone(),
-            &options,
+            &sort_payload.input,
+            &sort_payload.output,
+            sort_payload.sorting_strategies,
+            &sort_payload.options,
         ) {
             Err(e) => {
-                self.log_messages.push(LogMessage::Error(e.to_string()));
+                log_messages.push(LogMessage::Error(e.to_string()));
             }
             Ok(reports) => {
-                self.handle_report(options, reports);
-            }
-        }
-    }
+                self.handle_report(reports.clone());
 
-    fn handle_report(&mut self, options: sorter::SortOptions, reports: Vec<sorter::SorterReport>) {
-        self.log_messages.clear();
-        if options.dry_run {
-            self.tree_preview = Some(TreePreview::new(reports));
-        } else {
-            for report in reports {
-                match report.result {
-                    Err(e) => {
-                        self.log_messages.push(LogMessage::Warning(format!(
-                            "Error processing file {}: {}",
-                            report.input_filename.display(),
-                            e
-                        )));
-                    }
-                    _ => (),
+                if sort_payload.options.dry_run {
+                    self.tree_preview = Some(TreePreview::new(reports));
                 }
             }
         }
+
+        self.sorter_form.set_log_message(log_messages);
+    }
+
+    fn handle_report(&mut self, reports: FullSorterReport) {
+        let mut log_messages: Vec<LogMessage> = vec![];
+
+        for report in reports {
+            match &report.result {
+                Err(e) => {
+                    log_messages.push(LogMessage::Warning(format!(
+                        "Error processing file {}: {}",
+                        report.input_filename.display(),
+                        e
+                    )));
+                }
+                _ => (),
+            }
+        }
+
+        self.sorter_form.set_log_message(log_messages);
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        let input_path = self
-            .directory_input
-            .view()
-            .map(|msg| Message::InputPathChanged(msg));
-
-        let output_path = self
-            .directory_output
-            .view()
-            .map(|msg| Message::OutputPathChanged(msg));
-
-        let output_path_tree = self
-            .editable_file_tree
-            .view()
-            .map(|msg| Message::EditableFileTreeMessage(msg));
-
-        let sort_button = primary_button("Sort")
-            .on_press(Message::Sort)
-            .width(Length::Fill);
-
-        let alert_list: Vec<Element<'_, Message>> = self
-            .log_messages
-            .iter()
-            .map(|msg| match msg.clone() {
-                LogMessage::Warning(text) | LogMessage::Error(text) => {
-                    alert(msg.into(), text.clone()).into()
-                }
-            })
-            .collect();
-
-        let content = column![
-            container(scrollable(Column::from_vec(alert_list).spacing(4)))
-                .height(Length::Shrink)
-                .max_height(200.0),
-            input_path,
-            output_path,
-            self.option_form.view().map(Message::OptionFormMessage),
-            output_path_tree,
-            sort_button
-        ]
-        .padding(20)
-        .spacing(10);
-
-        row![scrollable(content)
-            .width(Length::Fixed(400.0))
-            .height(Length::Shrink)]
-        .push_maybe(
-            self.tree_preview
-                .as_ref()
-                .map(|tree_preview| tree_preview.view().map(Message::TreePreviewMessage)),
-        )
-        .into()
+        row![self.sorter_form.view().map(Message::SorterFormMessage)]
+            .push_maybe(
+                self.tree_preview
+                    .as_ref()
+                    .map(|tree_preview| tree_preview.view().map(Message::TreePreviewMessage)),
+            )
+            .into()
     }
 
     pub fn update(&mut self, message: Message) {
-        match message {
-            Message::Sort => {
-                self.sorting_strategies = self.editable_file_tree.get_sorting_strategies();
-                self.sort();
-            }
-            Message::InputPathChanged(message) => {
-                match self.directory_input.update(message.clone()) {
-                    directory_input::DirectoryInputEvent::SelectPath(path) => {
-                        self.input_path = path;
-                    }
-                    directory_input::DirectoryInputEvent::FailSelectPath => {}
+        let maybe_event: Option<EventWrapper> = match message {
+            Message::TreePreviewMessage(tree_preview_message) => self
+                .tree_preview
+                .as_mut()
+                .and_then(|tree_preview| tree_preview.update(tree_preview_message))
+                .map(EventWrapper::TreePreviewEvent),
+            Message::SorterFormMessage(sorter_form_message) => self
+                .sorter_form
+                .update(sorter_form_message)
+                .map(EventWrapper::SorterFormEvent),
+        };
+
+        if let Some(event) = maybe_event {
+            match event {
+                EventWrapper::SorterFormEvent(sorter_form::Event::Sort(payload)) => {
+                    self.sort(payload);
                 }
-            }
-            Message::OutputPathChanged(message) => {
-                match self.directory_output.update(message.clone()) {
-                    directory_input::DirectoryInputEvent::SelectPath(path) => {
-                        self.output_path = path;
-                    }
-                    directory_input::DirectoryInputEvent::FailSelectPath => {}
-                }
-            }
-            Message::EditableFileTreeMessage(m) => {
-                self.editable_file_tree.update(m);
-            }
-            Message::OptionFormMessage(option_form_message) => {
-                self.option_form.update(option_form_message);
-            }
-            Message::TreePreviewMessage(message) if message == tree_preview::Message::Apply => {
-                if let Some(tree_preview) = &self.tree_preview {
+                EventWrapper::TreePreviewEvent(tree_preview::Event::Apply) => {
+                    let tree_preview = self.tree_preview.as_ref().unwrap();
                     let new_report = move_files_from_report(tree_preview.pending_reports.clone());
-                    self.handle_report(self.option_form.get_options(), new_report);
+                    self.handle_report(new_report);
                 }
             }
-            _ => (),
         }
     }
 }

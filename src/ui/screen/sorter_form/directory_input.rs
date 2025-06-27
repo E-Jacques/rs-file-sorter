@@ -4,9 +4,8 @@ use iced::{
 };
 use rfd::FileDialog;
 
-use crate::ui::custom_theme;
+use crate::ui::{custom_theme, widget::icon};
 
-use super::icon;
 #[derive(Clone, Debug)]
 pub enum DirectoryInputMessage {
     OpenExplorer,
