@@ -5,7 +5,6 @@ use rsft_utils::common::file_or_dir_exists;
 use crate::{
     cli::cli_handler::parser::ArgDatum,
     core::{
-        sorter::{self, sorter, SorterReport},
         sorting_strategy::SortingStrategy,
         strategy_parameter::{StrategyParameter, StrategyParameterKind},
         strategy_validator::StrategyValidator,
@@ -24,11 +23,12 @@ use super::cli_handler::parser::{ArgValue, ParsedArgs};
 
 pub static PARAMETER: &str = "parameter";
 pub static DRY_RUN: &str = "dry-run";
+pub static ROOT_ONLY: &str = "root-only";
 pub static STACK: &str = "stack";
 
 static PARAMETER_SEP: &'static str = "=";
 
-impl std::fmt::Display for SorterReport {
+impl std::fmt::Display for crate::core::sorter::SorterReport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.result {
             Ok(target) => {
@@ -59,29 +59,37 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
         get_metadata_catalog().with(&get_manipulation_catalog());
     println!("{:?}", args);
 
-    let dry_run: bool = args
-        .iter()
-        .any(|a| a.arg_name == DRY_RUN.to_string() && a.arg_value != ArgValue::NotProvided);
+    let dry_run: bool = get_bool_arg_value(&args, DRY_RUN);
+    let root_level_only: bool = get_bool_arg_value(&args, ROOT_ONLY);
 
     match get_cli_inputs(args, params, STACK, sorting_strategies_list).and_then(
         |(input_dir, output_dir, sorting_strategies)| {
-            sorter(
-                &input_dir,
-                &output_dir,
+            crate::core::SortPipeline::new(
+                input_dir,
+                output_dir,
                 sorting_strategies,
-                &sorter::SortOptions { dry_run },
+                crate::core::sorter::SortOptions {
+                    dry_run,
+                    root_level_only,
+                },
             )
+            .process()
             .map_err(super::error::Error::SorterError)
         },
     ) {
         Err(err) => handle_errors(&logger, err),
         Ok(reports) if dry_run => {
-            for report in reports {
+            for report in reports.unwrap_or_default() {
                 println!("{}", report)
             }
         }
         _ => (),
     };
+}
+
+fn get_bool_arg_value(args: &Vec<ParsedArgs>, arg_name: &str) -> bool {
+    args.iter()
+        .any(|a| a.arg_name == arg_name.to_string() && a.arg_value != ArgValue::NotProvided)
 }
 
 fn get_cli_inputs(
