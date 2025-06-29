@@ -2964,6 +2964,7 @@ dependencies = [
  "regex",
  "rfd",
  "rsft-utils",
+ "walkdir",
 ]
 
 [[package]]
