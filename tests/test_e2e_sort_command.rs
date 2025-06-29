@@ -1,9 +1,17 @@
+use rs_file_sorter::utils::string_manipulator::random_string;
+
+fn get_test_number() -> String {
+    format!("test_{}", random_string(8))
+}
+
 #[cfg(test)]
 pub mod tests_e2e_sort_command {
     use std::{
         fs::{self, read_dir},
         path::Path,
     };
+
+    use super::get_test_number;
 
     use rs_file_sorter::cli::handle;
     use rsft_utils::{
@@ -21,11 +29,7 @@ pub mod tests_e2e_sort_command {
         ];
 
         // set target directory & generate test files
-        let target_dir = Path::new("tests")
-            .join("rsc")
-            .join("sort")
-            .join("test_1")
-            .join("target_dir");
+        let target_dir = get_base_test_path().join("target_dir");
         clean_or_create_dir(target_dir.clone())
             .expect("Should be able to clean or create directory before running test");
         generate_test_files(&target_dir, files).expect("Unable to generate the test files!");
@@ -71,6 +75,8 @@ pub mod tests_e2e_sort_command {
                 .join("10_October")
                 .join("file_2023-10-20_9E387272")
         ));
+
+        teardown(&target_dir);
     }
 
     #[test]
@@ -82,7 +88,7 @@ pub mod tests_e2e_sort_command {
             FileCreator::from("file_2023-10-20_9E387272"),
         ];
 
-        let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_2");
+        let common_dir = &get_base_test_path();
 
         // define input_dir
         let input_dir = common_dir.clone().join("input_dir");
@@ -139,7 +145,10 @@ pub mod tests_e2e_sort_command {
                 .join("10_October")
                 .join("file_2023-10-20_9E387272")
         ));
+
+        teardown(common_dir);
     }
+
     #[test]
     fn test_sort_with_parameters_and_concat() {
         // set filenames
@@ -150,7 +159,7 @@ pub mod tests_e2e_sort_command {
             FileCreator::from("file_2023-10-20_9E387272"),
         ];
 
-        let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_6");
+        let common_dir = &get_base_test_path();
 
         // define input_dir
         let input_dir = common_dir.clone().join("input_dir");
@@ -210,6 +219,8 @@ pub mod tests_e2e_sort_command {
                 .join("10_October2023")
                 .join("file_2023-10-20_9E387272")
         ));
+
+        teardown(common_dir);
     }
 
     #[test]
@@ -233,10 +244,12 @@ pub mod tests_e2e_sort_command {
             ),
             Some(true),
         );
+
+        teardown(common_dir);
     }
 
     #[test]
-    #[should_panic = "[ERROR] [Sort Command] output directory 'tests/rsc/sort/test_3/output_dir' don't exists"]
+    #[should_panic = "[ERROR] [Sort Command] output directory 'tests/rsc/sort/test_output_directory_dont_exists/output_dir' don't exists"]
     fn test_output_directory_dont_exists() {
         // set filenames
         let files = vec![
@@ -246,7 +259,10 @@ pub mod tests_e2e_sort_command {
         ];
 
         // define input & output directory
-        let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_3");
+        let common_dir = &Path::new("tests")
+            .join("rsc")
+            .join("sort")
+            .join("test_output_directory_dont_exists");
         let input_dir = common_dir.clone().join("input_dir");
         let output_dir = common_dir.clone().join("output_dir");
 
@@ -267,19 +283,36 @@ pub mod tests_e2e_sort_command {
             ),
             Some(true),
         );
+
+        teardown(common_dir);
     }
 
     #[test]
-    #[should_panic = "[ERROR] [Sort Command] 'tests/rsc/sort/test_4/input_dir/file' isn't a directory"]
+    #[should_panic = "[ERROR] [Sort Command] 'tests/rsc/sort/test_input_isnt_a_directory/input_dir/file' isn't a directory"]
     fn test_input_isnt_a_directory() {
         // define input & output directory
-        let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_4");
-        let input_dir = common_dir.clone().join("input_dir").join("file");
+        let common_dir = &Path::new("tests")
+            .join("rsc")
+            .join("sort")
+            .join("test_input_isnt_a_directory");
+        let input_dir = common_dir.clone().join("input_dir");
         let output_dir = common_dir.clone().join("output_dir");
 
+        clean_or_create_dir(input_dir.clone()).expect("should be able to create output_dir");
         clean_or_create_dir(output_dir.clone()).expect("should be able to create output_dir");
 
-        let final_input_dir = input_dir.clone().to_str().unwrap().to_string();
+        generate_test_files(
+            &input_dir,
+            vec![FileCreator {
+                path: "file".to_string(),
+                year: 2012,
+                month: 02,
+                day: 13,
+            }],
+        )
+        .expect("Unable to generate the test files!");
+
+        let final_input_dir = input_dir.clone().join("file").to_str().unwrap().to_string();
         let final_output_dir = output_dir.clone().to_str().unwrap().to_string();
 
         handle(
@@ -290,10 +323,12 @@ pub mod tests_e2e_sort_command {
             ),
             Some(true),
         );
+
+        teardown(common_dir);
     }
 
     #[test]
-    #[should_panic = "[ERROR] [Sort Command] 'tests/rsc/sort/test_5/output_dir/file' isn't a directory"]
+    #[should_panic = "[ERROR] [Sort Command] 'tests/rsc/sort/test_output_isnt_a_directory/output_dir/file' isn't a directory"]
     fn test_output_isnt_a_directory() {
         // set filenames
         let files = vec![
@@ -303,17 +338,37 @@ pub mod tests_e2e_sort_command {
         ];
 
         // define input & output directory
-        let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_5");
+        let common_dir = &Path::new("tests")
+            .join("rsc")
+            .join("sort")
+            .join("test_output_isnt_a_directory");
         let input_dir = common_dir.clone().join("input_dir");
-        let output_dir = common_dir.clone().join("output_dir").join("file");
+        let output_dir = common_dir.clone().join("output_dir");
 
         clean_or_create_dir(input_dir.clone())
             .expect("Should be able to clean or create directory before running test");
+        clean_or_create_dir(output_dir.clone())
+            .expect("Should be able to clean or create directory before running test");
 
         generate_test_files(&input_dir, files).expect("Unable to generate the test files!");
+        generate_test_files(
+            &output_dir,
+            vec![FileCreator {
+                path: "file".to_string(),
+                year: 2012,
+                month: 02,
+                day: 13,
+            }],
+        )
+        .expect("Unable to generate the test files!");
 
         let final_input_dir = input_dir.clone().to_str().unwrap().to_string();
-        let final_output_dir = output_dir.clone().to_str().unwrap().to_string();
+        let final_output_dir = output_dir
+            .clone()
+            .join("file")
+            .to_str()
+            .unwrap()
+            .to_string();
         handle(
             format!(
                 "sort --stack year --stack month {} {}",
@@ -322,6 +377,8 @@ pub mod tests_e2e_sort_command {
             ),
             Some(true),
         );
+
+        teardown(common_dir);
     }
 
     #[test]
@@ -333,7 +390,7 @@ pub mod tests_e2e_sort_command {
             FileCreator::from("file_2023-10-20_9E387272"),
         ];
 
-        let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_7");
+        let common_dir = &get_base_test_path();
 
         // define input_dir
         let input_dir = common_dir.clone().join("input_dir");
@@ -361,6 +418,8 @@ pub mod tests_e2e_sort_command {
 
         assert_eq!(read_dir(input_dir).unwrap().count(), 3);
         assert_eq!(read_dir(output_dir).unwrap().count(), 0);
+
+        teardown(common_dir);
     }
 
     #[test]
@@ -372,7 +431,7 @@ pub mod tests_e2e_sort_command {
         ];
         let files_root = vec![FileCreator::from("file_2023-10-20_9E387272")];
 
-        let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_20");
+        let common_dir = &get_base_test_path();
 
         // define input_dir
         let input_dir = common_dir.clone().join("input_dir");
@@ -422,6 +481,8 @@ pub mod tests_e2e_sort_command {
                 .join("10_October")
                 .join("file_2023-10-20_9E387272")
         ));
+
+        teardown(common_dir);
     }
 
     #[test]
@@ -433,7 +494,7 @@ pub mod tests_e2e_sort_command {
         ];
         let files_root = vec![FileCreator::from("file_2023-10-20_9E387272")];
 
-        let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_11");
+        let common_dir = &get_base_test_path();
 
         // define input_dir
         let input_dir = common_dir.clone().join("input_dir");
@@ -495,5 +556,18 @@ pub mod tests_e2e_sort_command {
                 .join("10_October")
                 .join("file_2023-10-20_9E387272")
         ));
+
+        teardown(common_dir);
+    }
+
+    fn teardown(target_dir: &std::path::PathBuf) {
+        fs::remove_dir_all(target_dir).expect("Unable to teardown");
+    }
+
+    fn get_base_test_path() -> std::path::PathBuf {
+        Path::new("tests")
+            .join("rsc")
+            .join("sort")
+            .join(get_test_number())
     }
 }
