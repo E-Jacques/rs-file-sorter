@@ -1,7 +1,7 @@
 use iced::{widget::row, Element};
 
 use crate::{
-    core::sorter::{self, move_files_from_report, FullSorterReport},
+    core::sorter::FullSorterReport,
     ui::{
         screen::{
             sorter_form::{self, SortPayload, SorterForm},
@@ -14,6 +14,7 @@ use crate::{
 pub struct FileSorterApp {
     sorter_form: SorterForm,
     tree_preview: Option<TreePreview>,
+    pipeline: Option<crate::core::SortPipeline>,
 }
 
 #[derive(Debug, Clone)]
@@ -54,27 +55,35 @@ impl FileSorterApp {
         FileSorterApp {
             sorter_form: SorterForm::default(),
             tree_preview: None,
+            pipeline: None,
         }
     }
 
     fn sort(&mut self, sort_payload: SortPayload) {
         let mut log_messages: Vec<LogMessage> = vec![];
 
-        match sorter::sorter(
-            &sort_payload.input,
-            &sort_payload.output,
+        self.pipeline = Some(crate::core::SortPipeline::new(
+            sort_payload.input,
+            sort_payload.output,
             sort_payload.sorting_strategies,
-            &sort_payload.options,
-        ) {
+            sort_payload.options.clone(),
+        ));
+        let pipeline = self.pipeline.as_mut().unwrap();
+        match pipeline.process() {
             Err(e) => {
                 log_messages.push(LogMessage::Error(e.to_string()));
             }
-            Ok(reports) => {
-                self.handle_report(reports.clone());
-
-                if sort_payload.options.dry_run {
-                    self.tree_preview = Some(TreePreview::new(reports));
+            Ok(Some(reports)) => {
+                if pipeline.has_next() {
+                    self.tree_preview = Some(TreePreview::new(reports.clone()));
                 }
+
+                self.handle_report(reports);
+            }
+            Ok(None) => {
+                log_messages.push(LogMessage::Error(
+                    "Pipeline didn't reach expected step".to_string(),
+                ));
             }
         }
 
@@ -129,9 +138,13 @@ impl FileSorterApp {
                     self.sort(payload);
                 }
                 EventWrapper::TreePreviewEvent(tree_preview::Event::Apply) => {
-                    let tree_preview = self.tree_preview.as_ref().unwrap();
-                    let new_report = move_files_from_report(tree_preview.pending_reports.clone());
-                    self.handle_report(new_report);
+                    if let Some(pipeline) = &mut self.pipeline {
+                        let maybe_new_report = pipeline.process();
+
+                        if let Ok(Some(new_report)) = maybe_new_report {
+                            self.handle_report(new_report);
+                        }
+                    }
                 }
             }
         }

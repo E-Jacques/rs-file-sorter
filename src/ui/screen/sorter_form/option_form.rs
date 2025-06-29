@@ -13,6 +13,7 @@ pub struct OptionForm {
 #[derive(Debug, Clone)]
 pub enum Message {
     UpdateDryRun(bool),
+    UpdateRootOnly(bool),
 }
 
 impl OptionForm {
@@ -27,7 +28,9 @@ impl OptionForm {
             column![
                 iced::widget::text("Options"),
                 iced::widget::checkbox("Dry run", self.options.dry_run)
-                    .on_toggle(|checked| Message::UpdateDryRun(checked))
+                    .on_toggle(|checked| Message::UpdateDryRun(checked)),
+                iced::widget::checkbox("At root level only", self.options.root_level_only)
+                    .on_toggle(|checked| Message::UpdateRootOnly(checked))
             ]
             .spacing(16)
             .width(Length::Fill),
@@ -44,6 +47,9 @@ impl OptionForm {
 
     pub fn update(&mut self, message: Message) {
         match message {
+            Message::UpdateRootOnly(root_level_only) => {
+                self.options.root_level_only = root_level_only
+            }
             Message::UpdateDryRun(dry_run) => self.options.dry_run = dry_run,
         };
     }

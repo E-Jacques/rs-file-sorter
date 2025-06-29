@@ -1,7 +1,7 @@
 use cli_handler::cli_handler_builder::{ArgValueTypes, CliHandlerBuilder};
 use sort_command::exec_sort_command;
 
-use crate::{cli::sort_command::{DRY_RUN, PARAMETER, STACK}, utils::logger::Logger};
+use crate::{cli::sort_command::{DRY_RUN, PARAMETER, ROOT_ONLY, STACK}, utils::logger::Logger};
 
 mod cli_handler;
 pub mod sort_command;
@@ -32,6 +32,11 @@ pub fn handle(input: String, debug_mode: Option<bool>) {
     .argument(
         DRY_RUN.to_string(), 
     "Output a report without actually applying it to the files.".to_string(), 
+    vec![ArgValueTypes::NoValue]
+    )
+    .argument(
+        ROOT_ONLY.to_string(), 
+    "Only compute the report and move file at the input directory root level. Other files will stay in-place.".to_string(), 
     vec![ArgValueTypes::NoValue]
     )
     .parameter(
