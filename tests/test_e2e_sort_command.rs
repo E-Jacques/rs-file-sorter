@@ -362,4 +362,138 @@ pub mod tests_e2e_sort_command {
         assert_eq!(read_dir(input_dir).unwrap().count(), 3);
         assert_eq!(read_dir(output_dir).unwrap().count(), 0);
     }
+
+    #[test]
+    fn test_sort_only_root_level() {
+        // set filenames
+        let files_other_dir = vec![
+            FileCreator::from("file_2022-02-22_F1BDD782"),
+            FileCreator::from("file_2022-10-20_6FC02130"),
+        ];
+        let files_root = vec![FileCreator::from("file_2023-10-20_9E387272")];
+
+        let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_20");
+
+        // define input_dir
+        let input_dir = common_dir.clone().join("input_dir");
+        let other_dir = input_dir.clone().join("other_dir");
+        clean_or_create_dir(other_dir.clone())
+            .expect("Should be able to clean or create directory before running test");
+
+        // define output dir
+        let output_dir = common_dir.clone().join("output_dir");
+        clean_or_create_dir(output_dir.clone())
+            .expect("Should be able to clean or create directory before running test");
+
+        // generate files in input directory
+        generate_test_files(&input_dir, files_root).expect("Unable to generate the test files!");
+        generate_test_files(&other_dir, files_other_dir)
+            .expect("Unable to generate the test files!");
+
+        let final_input_dir = input_dir.clone().to_str().unwrap().to_string();
+        let final_output_dir = output_dir.clone().to_str().unwrap().to_string();
+        handle(
+            format!(
+                "sort --root-only --stack year --stack month {} {}",
+                final_input_dir.clone(),
+                final_output_dir.clone()
+            ),
+            Some(true),
+        );
+
+        let content_of_target_dir = fs::read_dir(output_dir.clone()).unwrap();
+        assert_eq!(content_of_target_dir.count(), 1);
+
+        // Test if year files have been created.
+        let pathbuf_2023_dir = output_dir.clone().join("2023");
+        assert!(file_or_dir_exists(pathbuf_2023_dir.clone()));
+
+        let content_2023_dir = fs::read_dir(pathbuf_2023_dir.clone()).unwrap();
+        assert_eq!(content_2023_dir.count(), 1);
+        assert!(file_or_dir_exists(
+            other_dir.clone().join("file_2022-02-22_F1BDD782")
+        ));
+        assert!(file_or_dir_exists(
+            other_dir.clone().join("file_2022-10-20_6FC02130")
+        ));
+        assert!(file_or_dir_exists(
+            pathbuf_2023_dir
+                .clone()
+                .join("10_October")
+                .join("file_2023-10-20_9E387272")
+        ));
+    }
+
+    #[test]
+    fn test_sort_not_only_root_level() {
+        // set filenames
+        let files_other_dir = vec![
+            FileCreator::from("file_2022-02-22_F1BDD782"),
+            FileCreator::from("file_2022-10-20_6FC02130"),
+        ];
+        let files_root = vec![FileCreator::from("file_2023-10-20_9E387272")];
+
+        let common_dir = &Path::new("tests").join("rsc").join("sort").join("test_11");
+
+        // define input_dir
+        let input_dir = common_dir.clone().join("input_dir");
+        let other_dir = input_dir.clone().join("other_dir");
+        clean_or_create_dir(other_dir.clone())
+            .expect("Should be able to clean or create directory before running test");
+
+        // define output dir
+        let output_dir = common_dir.clone().join("output_dir");
+        clean_or_create_dir(output_dir.clone())
+            .expect("Should be able to clean or create directory before running test");
+
+        // generate files in input directory
+        generate_test_files(&input_dir, files_root).expect("Unable to generate the test files!");
+        generate_test_files(&other_dir, files_other_dir)
+            .expect("Unable to generate the test files!");
+
+        let final_input_dir = input_dir.clone().to_str().unwrap().to_string();
+        let final_output_dir = output_dir.clone().to_str().unwrap().to_string();
+        handle(
+            format!(
+                "sort --stack year --stack month {} {}",
+                final_input_dir.clone(),
+                final_output_dir.clone()
+            ),
+            Some(true),
+        );
+
+        assert!(!file_or_dir_exists(other_dir));
+
+        let content_of_target_dir = fs::read_dir(output_dir.clone()).unwrap();
+        assert_eq!(content_of_target_dir.count(), 2);
+
+        // Test if year files have been created.
+        let pathbuf_2023_dir = output_dir.clone().join("2023");
+        let pathbuf_2022_dir = output_dir.clone().join("2022");
+        assert!(file_or_dir_exists(pathbuf_2023_dir.clone()));
+        assert!(file_or_dir_exists(pathbuf_2022_dir.clone()));
+
+        let content_2023_dir = fs::read_dir(pathbuf_2023_dir.clone()).unwrap();
+        let content_2022_dir = fs::read_dir(pathbuf_2022_dir.clone()).unwrap();
+        assert_eq!(content_2023_dir.count(), 1);
+        assert_eq!(content_2022_dir.count(), 2);
+        assert!(file_or_dir_exists(
+            pathbuf_2022_dir
+                .clone()
+                .join("02_February")
+                .join("file_2022-02-22_F1BDD782")
+        ));
+        assert!(file_or_dir_exists(
+            pathbuf_2022_dir
+                .clone()
+                .join("10_October")
+                .join("file_2022-10-20_6FC02130")
+        ));
+        assert!(file_or_dir_exists(
+            pathbuf_2023_dir
+                .clone()
+                .join("10_October")
+                .join("file_2023-10-20_9E387272")
+        ));
+    }
 }

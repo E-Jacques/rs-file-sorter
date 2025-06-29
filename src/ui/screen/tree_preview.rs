@@ -17,7 +17,6 @@ use crate::{
 
 pub struct TreePreview {
     root_node: node::Node,
-    pub pending_reports: FullSorterReport,
 }
 
 static DESCRIPTION:&'static str = "No file have been moved yet. Want you see is only a preview of want it may look likes after move files. Please press the 'Apply' button if you decide to proceed.";
@@ -43,7 +42,6 @@ impl TreePreview {
                     .collect::<Vec<PathBuf>>(),
             )
             .canonicalize(),
-            pending_reports: reports,
         }
     }
 
