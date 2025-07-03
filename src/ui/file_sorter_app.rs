@@ -60,14 +60,18 @@ impl FileSorterApp {
     }
 
     fn sort(&mut self, sort_payload: SortPayload) {
-        let mut log_messages: Vec<LogMessage> = vec![];
-
         self.pipeline = Some(crate::core::SortPipeline::new(
             sort_payload.input,
             sort_payload.output,
             sort_payload.sorting_strategies,
             sort_payload.options.clone(),
         ));
+
+        self.process_sort_pipeline();
+    }
+
+    fn process_sort_pipeline(&mut self) -> () {
+        let mut log_messages: Vec<LogMessage> = vec![];
         let pipeline = self.pipeline.as_mut().unwrap();
         match pipeline.process() {
             Err(e) => {
@@ -138,13 +142,7 @@ impl FileSorterApp {
                     self.sort(payload);
                 }
                 EventWrapper::TreePreviewEvent(tree_preview::Event::Apply) => {
-                    if let Some(pipeline) = &mut self.pipeline {
-                        let maybe_new_report = pipeline.process();
-
-                        if let Ok(Some(new_report)) = maybe_new_report {
-                            self.handle_report(new_report);
-                        }
-                    }
+                    self.process_sort_pipeline();
                 }
             }
         }
