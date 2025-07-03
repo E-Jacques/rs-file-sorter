@@ -21,6 +21,13 @@ impl PipelineStage<PipelineData, error::Error> for GetFilesStage {
                     if self.options.root_level_only {
                         std::fs::read_dir(&self.input)
                             .map_err(error::Error::IO)?
+                            .filter_map(|entry| match entry {
+                                Ok(e) => match e.file_type() {
+                                    Ok(file_type) if file_type.is_file() => Some(Ok(e)),
+                                    _ => None,
+                                },
+                                Err(err) => Some(Err(err)),
+                            })
                             .map(|entry| entry.map(|e| e.path()))
                             .collect::<Result<_, _>>()
                             .map_err(error::Error::IO)
