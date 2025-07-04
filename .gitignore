@@ -12,3 +12,5 @@ tests/**/output_dir/**/*
 !tests/rsc/sort/test_5/output_dir/file
 
 tarpaulin-report.html
+Output
+*.exe
