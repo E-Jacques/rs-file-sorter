@@ -27,7 +27,7 @@ impl ApplyStrategiesStage {
         let mut new_output = PathBuf::new();
         new_output.push(&self.output);
         for strategy in &self.strategies {
-            new_output.push(strategy.apply(&file));
+            new_output.push(strategy.apply(full_filename, &file));
         }
 
         Ok(new_output.join(file_name))

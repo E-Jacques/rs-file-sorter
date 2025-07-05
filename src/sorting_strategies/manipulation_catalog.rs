@@ -16,7 +16,9 @@ pub fn get_manipulation_catalog() -> StrategyCatalog {
 fn get_concat_strategy() -> SortingStrategy {
     let mut strategy = SortingStrategy::new(
         "concat",
-        move |f: &File, parameters: &HashMap<String, StrategyParameter>| {
+        move |file_path: &std::path::PathBuf,
+              f: &File,
+              parameters: &HashMap<String, StrategyParameter>| {
             let mut result = String::new();
 
             let strategies = parameters.get("strategies").unwrap();
@@ -24,7 +26,7 @@ fn get_concat_strategy() -> SortingStrategy {
                 StrategyParameter::Strategy(strategies) => {
                     for strategy in strategies {
                         let action = &strategy.action;
-                        result.push_str(&action(f, &strategy.parameters));
+                        result.push_str(&action(file_path, f, &strategy.parameters));
                     }
                 }
                 _ => (),
@@ -44,7 +46,7 @@ fn get_concat_strategy() -> SortingStrategy {
 fn get_text_strategy() -> SortingStrategy {
     let mut strategy = SortingStrategy::new(
         "text",
-        move |_: &File, parameters: &HashMap<String, StrategyParameter>| {
+        move |_, _, parameters: &HashMap<String, StrategyParameter>| {
             let mut result = String::new();
 
             let strategies = parameters.get("value").unwrap();

@@ -27,8 +27,9 @@ pub fn get_metadata_catalog() -> StrategyCatalog {
 fn get_month_sorting_strategy() -> SortingStrategy {
     let mut strategy = SortingStrategy::new(
         "month",
-        |f: &File, parameters: &HashMap<String, StrategyParameter>| match get_last_modified_time(f)
-        {
+        |_, f: &File, parameters: &HashMap<String, StrategyParameter>| match get_last_modified_time(
+            f,
+        ) {
             Ok(datetime) => {
                 let locale: chrono::Locale =
                     if let Some(StrategyParameter::SingleString(locale_str)) =
@@ -63,7 +64,7 @@ fn get_month_sorting_strategy() -> SortingStrategy {
 }
 
 fn get_year_sorting_strategy() -> SortingStrategy {
-    SortingStrategy::new("year", |f: &File, _| match get_last_modified_time(f) {
+    SortingStrategy::new("year", |_, f: &File, _| match get_last_modified_time(f) {
         Ok(datetime) => datetime.format("%Y").to_string(),
         Err(error) => panic!("{}", format!("Cannot retrieve year number: {:#?}", error)),
     })
