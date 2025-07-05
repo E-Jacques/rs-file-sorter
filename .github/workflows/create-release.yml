@@ -55,8 +55,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${version}
-          name: RS File Sorter v${version}
+          tag_name: ${{ github.ref_name }}
+          name: RS File Sorter ${{ github.ref_name }}
           body_path: CHANGELOG.md
           files: RSFileSorterSetup.exe
           token: ${{ github.token }}
