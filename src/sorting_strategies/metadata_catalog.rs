@@ -21,6 +21,7 @@ pub fn get_metadata_catalog() -> StrategyCatalog {
     StrategyCatalog::new(vec![
         get_month_sorting_strategy(),
         get_year_sorting_strategy(),
+        get_file_ext(),
     ])
 }
 
@@ -67,5 +68,16 @@ fn get_year_sorting_strategy() -> SortingStrategy {
     SortingStrategy::new("year", |_, f: &File, _| match get_last_modified_time(f) {
         Ok(datetime) => datetime.format("%Y").to_string(),
         Err(error) => panic!("{}", format!("Cannot retrieve year number: {:#?}", error)),
+    })
+}
+
+fn get_file_ext() -> SortingStrategy {
+    SortingStrategy::new("file extension", |file_path: &std::path::PathBuf, _, _| {
+        file_path
+            .extension()
+            .map(|os_str| os_str.to_str())
+            .flatten()
+            .unwrap_or("unknown")
+            .to_string()
     })
 }
