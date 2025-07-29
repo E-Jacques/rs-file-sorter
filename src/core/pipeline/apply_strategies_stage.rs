@@ -24,11 +24,11 @@ impl ApplyStrategiesStage {
     ) -> Result<PathBuf, error::Error> {
         let file = fs::File::open(full_filename.clone()).map_err(error::Error::IO)?;
 
-        let mut new_output = PathBuf::new();
-        new_output.push(&self.output);
-        for strategy in &self.strategies {
-            new_output.push(strategy.apply(full_filename, &file));
-        }
+        let mut new_output = PathBuf::from(&self.output);
+        self.strategies
+            .iter()
+            .filter_map(|strategy| strategy.apply(full_filename, &file))
+            .for_each(|path| new_output.push(path));
 
         Ok(new_output.join(file_name))
     }
@@ -110,7 +110,8 @@ mod tests {
             "test_apply_strategies_should_correctly_handle_single_file_and_strategies",
         )
         .expect("Failed to create temp dir");
-        let strategy = SortingStrategy::new("strategy1", |_, _, _| "strategy1_output".to_string());
+        let strategy =
+            SortingStrategy::new("strategy1", |_, _, _| Some("strategy1_output".to_string()));
         let strategies = vec![strategy];
         let stage = ApplyStrategiesStage::new(
             tmp_dir
@@ -210,7 +211,8 @@ mod tests {
             std::fs::File::create(file).expect("Failed to create input file");
         }
         let tmp_output = tmp_dir.path().join("output");
-        let strategy = SortingStrategy::new("strategy1", |_, _, _| "strategy1_output".to_string());
+        let strategy =
+            SortingStrategy::new("strategy1", |_, _, _| Some("strategy1_output".to_string()));
         let strategies = vec![strategy];
         let stage = ApplyStrategiesStage::new(
             tmp_output.as_os_str().to_str().unwrap().to_string(),
@@ -235,6 +237,43 @@ mod tests {
                         .join(report.input_filename.file_name().unwrap())
                 );
             }
+        }
+
+        drop(tmp_dir);
+    }
+
+    #[test]
+    fn test_apply_strategies_should_ignore_none_return() {
+        let tmp_dir = TempDir::new("test_apply_strategies_should_ignore_none_return")
+            .expect("Failed to create temp dir");
+        let input_file = tmp_dir.path().join("input.txt");
+        std::fs::File::create(&input_file).expect("Failed to create input file");
+        let strategy = SortingStrategy::new("strategy1", |_, _, _| None);
+        let strategies = vec![strategy];
+        let stage = ApplyStrategiesStage::new(
+            tmp_dir
+                .path()
+                .join("output")
+                .as_os_str()
+                .to_str()
+                .unwrap()
+                .to_string(),
+            strategies,
+        );
+        let data = PipelineData::Paths(vec![input_file]);
+
+        let result = stage.execute(data);
+        assert!(result.is_ok());
+        let unwrapped_data = result.unwrap();
+        assert_eq!(unwrapped_data.kind(), PipelineDataKind::Report);
+        if let PipelineData::Report(reports) = unwrapped_data {
+            assert_eq!(reports.len(), 1);
+            assert!(reports[0].result.is_ok());
+            assert_eq!(
+                *reports[0].result.as_ref().ok().unwrap(),
+                tmp_dir.path().join("output").join("input.txt")
+            );
+            assert_eq!(reports[0].input_filename, tmp_dir.path().join("input.txt"));
         }
 
         drop(tmp_dir);

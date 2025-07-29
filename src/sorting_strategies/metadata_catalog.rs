@@ -43,7 +43,8 @@ fn get_month_sorting_strategy() -> SortingStrategy {
                         chrono::Locale::fr_FR
                     };
 
-                datetime.format_localized("%m_%B", locale).to_string()
+                let formatted = datetime.format_localized("%m_%B", locale).to_string();
+                Some(formatted)
             }
             Err(error) => panic!("{}", format!("Cannot retrieve month number: {:#?}", error)),
         },
@@ -68,7 +69,7 @@ fn get_month_sorting_strategy() -> SortingStrategy {
 
 fn get_year_sorting_strategy() -> SortingStrategy {
     SortingStrategy::new("year", |_, f: &File, _| match get_last_modified_time(f) {
-        Ok(datetime) => datetime.format("%Y").to_string(),
+        Ok(datetime) => Some(datetime.format("%Y").to_string()),
         Err(error) => panic!("{}", format!("Cannot retrieve year number: {:#?}", error)),
     })
 }
@@ -84,13 +85,14 @@ fn file_ext(file_path: &std::path::PathBuf) -> String {
 
 fn get_file_ext() -> SortingStrategy {
     SortingStrategy::new("file extension", |file_path: &std::path::PathBuf, _, _| {
-        file_ext(file_path)
+        Some(file_ext(file_path))
     })
 }
 
 fn get_file_type() -> SortingStrategy {
     SortingStrategy::new("file type", |file_path: &std::path::PathBuf, _, _| {
         let ext = file_ext(file_path);
-        filetype::FileType::from_extension(&ext).into()
+        let file_type = filetype::FileType::from_extension(&ext).into();
+        Some(file_type)
     })
 }

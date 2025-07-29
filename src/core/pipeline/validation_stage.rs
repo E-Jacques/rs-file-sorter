@@ -80,7 +80,8 @@ mod tests {
 
     #[test]
     fn test_should_return_validation_error_if_not_valid() {
-        let mut strategy = SortingStrategy::new("my-strategy", |_, _, _| String::from("test"));
+        let mut strategy =
+            SortingStrategy::new("my-strategy", |_, _, _| Some(String::from("test")));
         strategy.add_validator(StrategyValidator::new(
             "my-validator",
             StrategyParameterKind::SingleString,
