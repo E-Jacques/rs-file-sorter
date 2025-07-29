@@ -7,7 +7,7 @@ use crate::core::strategy_parameter::StrategyParameter;
 use crate::core::strategy_validator::{parameter_exists, StrategyValidator};
 
 type SortingStrategyAction =
-    fn(&std::path::PathBuf, &File, &HashMap<String, StrategyParameter>) -> String;
+    fn(&std::path::PathBuf, &File, &HashMap<String, StrategyParameter>) -> Option<String>;
 
 #[derive(Clone)]
 pub struct SortingStrategy {
@@ -69,7 +69,7 @@ impl SortingStrategy {
             })
     }
 
-    pub(crate) fn apply(&self, file_path: &std::path::PathBuf, file: &File) -> String {
+    pub(crate) fn apply(&self, file_path: &std::path::PathBuf, file: &File) -> Option<String> {
         let file_mutex = Arc::new(Mutex::new(file));
         let file_clone = Arc::clone(&file_mutex);
         let file_lock = file_clone.lock().unwrap();
@@ -92,7 +92,7 @@ mod test {
         #[test]
         fn should_return_unknown_parameter_error_when_one_parameter_not_in_specification() {
             let mut sorting_strategy =
-                SortingStrategy::new("my-strategy", |_, _, _| String::default());
+                SortingStrategy::new("my-strategy", |_, _, _| Some(String::default()));
             sorting_strategy.add_validator(StrategyValidator::new(
                 "known-param",
                 StrategyParameterKind::SingleString,
@@ -116,7 +116,7 @@ mod test {
         #[test]
         fn should_return_type_error_when_parameter_kind_missmatch_with_specification() {
             let mut sorting_strategy =
-                SortingStrategy::new("my-strategy", |_, _, _| String::default());
+                SortingStrategy::new("my-strategy", |_, _, _| Some(String::default()));
             sorting_strategy.add_validator(StrategyValidator::new(
                 "param-1",
                 StrategyParameterKind::SingleString,
@@ -150,7 +150,7 @@ mod test {
         fn should_return_missing_mandatory_parameter_error_when_one_required_parameter_is_missing()
         {
             let mut sorting_strategy =
-                SortingStrategy::new("my-strategy", |_, _, _| String::default());
+                SortingStrategy::new("my-strategy", |_, _, _| Some(String::default()));
             sorting_strategy.add_validator(StrategyValidator::new(
                 "param-1",
                 StrategyParameterKind::SingleString,
@@ -179,7 +179,7 @@ mod test {
         #[test]
         fn should_return_ok_if_specification_is_respected() {
             let mut sorting_strategy =
-                SortingStrategy::new("my-strategy", |_, _, _| String::default());
+                SortingStrategy::new("my-strategy", |_, _, _| Some(String::default()));
             sorting_strategy.add_validator(StrategyValidator::new(
                 "param-1",
                 StrategyParameterKind::SingleString,
@@ -215,7 +215,7 @@ mod test {
         )]
         fn should_panic_if_validator_with_same_name_specified_twice() {
             let mut sorting_strategy =
-                SortingStrategy::new("my-strategy", |_, _, _| String::default());
+                SortingStrategy::new("my-strategy", |_, _, _| Some(String::default()));
             sorting_strategy.add_validator(StrategyValidator::new(
                 "param-twice",
                 StrategyParameterKind::SingleString,
@@ -231,7 +231,7 @@ mod test {
         #[test]
         fn should_push_to_the_list_of_validators() {
             let mut sorting_strategy =
-                SortingStrategy::new("my-strategy", |_, _, _| String::default());
+                SortingStrategy::new("my-strategy", |_, _, _| Some(String::default()));
             sorting_strategy.add_validator(StrategyValidator::new(
                 "param-1",
                 StrategyParameterKind::SingleString,
@@ -263,7 +263,7 @@ mod test {
         #[test]
         fn should_push_to_the_hashmap_of_parameters() {
             let mut sorting_strategy =
-                SortingStrategy::new("my-strategy", |_, _, _| String::default());
+                SortingStrategy::new("my-strategy", |_, _, _| Some(String::default()));
             sorting_strategy.add_parameter(
                 String::from("param-1"),
                 StrategyParameter::SingleString(String::from("My value 1")),

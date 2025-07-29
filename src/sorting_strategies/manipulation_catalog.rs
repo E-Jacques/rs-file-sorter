@@ -24,14 +24,14 @@ fn get_concat_strategy() -> SortingStrategy {
             let strategies = parameters.get("strategies").unwrap();
             match strategies {
                 StrategyParameter::Strategy(strategies) => {
-                    for strategy in strategies {
-                        let action = &strategy.action;
-                        result.push_str(&action(file_path, f, &strategy.parameters));
-                    }
+                    strategies
+                        .iter()
+                        .filter_map(|strategy| strategy.apply(file_path, f))
+                        .for_each(|part| result.push_str(&part));
                 }
                 _ => (),
             }
-            result
+            Some(result)
         },
     );
     strategy.add_validator(StrategyValidator::new(
@@ -56,7 +56,7 @@ fn get_text_strategy() -> SortingStrategy {
                 }
                 _ => (),
             }
-            result
+            Some(result)
         },
     );
     strategy.add_validator(StrategyValidator::new(
