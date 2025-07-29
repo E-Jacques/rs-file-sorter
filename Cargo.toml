@@ -22,4 +22,5 @@ rand = "0.9.1"
 regex = "1.10.2"
 rfd = "0.15.3"
 rsft-utils = { git = "https://github.com/E-Jacques/rsft-utils" }
+tempdir = "0.3.7"
 walkdir = "2.5.0"
