@@ -1,3 +1,4 @@
+mod filetype;
 use std::{collections::HashMap, fs::File, str::FromStr};
 
 use crate::{
@@ -22,6 +23,7 @@ pub fn get_metadata_catalog() -> StrategyCatalog {
         get_month_sorting_strategy(),
         get_year_sorting_strategy(),
         get_file_ext(),
+        get_file_type(),
     ])
 }
 
@@ -71,13 +73,24 @@ fn get_year_sorting_strategy() -> SortingStrategy {
     })
 }
 
+fn file_ext(file_path: &std::path::PathBuf) -> String {
+    file_path
+        .extension()
+        .map(|os_str| os_str.to_str())
+        .flatten()
+        .unwrap_or("unknown")
+        .to_string()
+}
+
 fn get_file_ext() -> SortingStrategy {
     SortingStrategy::new("file extension", |file_path: &std::path::PathBuf, _, _| {
-        file_path
-            .extension()
-            .map(|os_str| os_str.to_str())
-            .flatten()
-            .unwrap_or("unknown")
-            .to_string()
+        file_ext(file_path)
+    })
+}
+
+fn get_file_type() -> SortingStrategy {
+    SortingStrategy::new("file type", |file_path: &std::path::PathBuf, _, _| {
+        let ext = file_ext(file_path);
+        filetype::FileType::from_extension(&ext).into()
     })
 }
