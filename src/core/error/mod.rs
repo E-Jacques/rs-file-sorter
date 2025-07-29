@@ -8,6 +8,27 @@ pub enum Error {
     Pipeline,
 }
 
+#[cfg(test)]
+#[derive(PartialEq, Debug)]
+pub enum ErrorKind {
+    Validation,
+    Strategy,
+    IO,
+    Pipeline,
+}
+
+#[cfg(test)]
+impl Error {
+    pub fn kind(&self) -> ErrorKind {
+        match self {
+            Error::Validation(_, _) => ErrorKind::Validation,
+            Error::Strategy(_) => ErrorKind::Strategy,
+            Error::IO(_) => ErrorKind::IO,
+            Error::Pipeline => ErrorKind::Pipeline,
+        }
+    }
+}
+
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl std::fmt::Display for Error {
