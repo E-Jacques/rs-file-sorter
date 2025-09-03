@@ -1,8 +1,10 @@
+pub mod context;
 pub mod error;
+pub mod options;
+pub mod parameter;
 mod pipeline;
-pub mod sorter;
-pub mod sorting_strategy;
-pub mod strategy_parameter;
-pub mod strategy_validator;
+pub mod report;
+pub mod strategy;
+pub mod validation;
 
 pub use pipeline::SortPipeline;

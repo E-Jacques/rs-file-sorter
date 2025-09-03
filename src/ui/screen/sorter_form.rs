@@ -8,7 +8,7 @@ use iced::{
 };
 
 use crate::{
-    core::{sorter::SortOptions, sorting_strategy::SortingStrategy},
+    core::{options::SortOptions, strategy::Strategy},
     sorting_strategies::{
         manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
     },
@@ -22,7 +22,7 @@ use crate::{
 pub struct SortPayload {
     pub input: String,
     pub output: String,
-    pub sorting_strategies: Vec<SortingStrategy>,
+    pub strategies: Vec<Box<dyn Strategy>>,
     pub options: SortOptions,
 }
 
@@ -127,11 +127,11 @@ impl SorterForm {
     pub fn update(&mut self, message: Message) -> Option<Event> {
         match message {
             Message::Sort => {
-                let sorting_strategies = self.editable_file_tree.get_sorting_strategies();
+                let strategies = self.editable_file_tree.get_sorting_strategies();
                 return Some(Event::Sort(SortPayload {
                     input: self.input_path.clone(),
                     output: self.output_path.clone(),
-                    sorting_strategies,
+                    strategies,
                     options: self.option_form.get_options(),
                 }));
             }

@@ -3,7 +3,7 @@ use iced::{
     Length,
 };
 
-use crate::{core::sorter::SortOptions, ui::custom_theme};
+use crate::{core::options::SortOptions, ui::custom_theme};
 
 #[derive(Debug, Clone)]
 pub struct OptionForm {

@@ -1,16 +1,20 @@
 use std::fmt::Display;
 
-use crate::core::sorting_strategy::SortingStrategy;
-
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum StrategyParameter {
-    Strategy(Vec<Box<SortingStrategy>>),
+    Strategy(Vec<Box<dyn super::strategy::Strategy>>),
     SingleString(String),
 }
 
-impl PartialEq for Box<SortingStrategy> {
+impl PartialEq for StrategyParameter {
     fn eq(&self, other: &Self) -> bool {
-        *self.name == other.name && self.parameters == other.parameters
+        match (self, other) {
+            (StrategyParameter::SingleString(s1), StrategyParameter::SingleString(s2)) => s1 == s2,
+            (StrategyParameter::Strategy(v1), StrategyParameter::Strategy(v2)) => {
+                v1.len() == v2.len()
+            }
+            _ => false,
+        }
     }
 }
 

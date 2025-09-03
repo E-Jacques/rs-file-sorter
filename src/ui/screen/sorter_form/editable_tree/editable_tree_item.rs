@@ -7,8 +7,8 @@ use iced::{
 
 use crate::{
     core::{
-        sorting_strategy::SortingStrategy,
-        strategy_parameter::{StrategyParameter, StrategyParameterKind},
+        strategy::Strategy,
+        parameter::{StrategyParameter, StrategyParameterKind},
     },
     sorting_strategies::strategy_catalog::StrategyCatalog,
     ui::{
@@ -160,7 +160,7 @@ impl EditableTreeItem {
         self.child_elements.clear();
 
         if let Some(strategy) = self.get_sorting_strategy() {
-            for validator in strategy.validators {
+            for validator in strategy.parameter_details() {
                 match validator.kind {
                     StrategyParameterKind::Strategy => {
                         self.child_elements.insert(
@@ -197,20 +197,15 @@ impl EditableTreeItem {
         }
     }
 
-    pub fn get_sorting_strategy(&self) -> Option<SortingStrategy> {
+    pub fn get_sorting_strategy(&self) -> Option<Box<dyn Strategy>> {
         let name = self.selected_strategy.as_ref()?;
         let mut strategy = self.strategy_catalog.get_strategy(name)?;
 
         for (key, child_element) in &self.child_elements {
             let maybe_value: Option<StrategyParameter> = match child_element {
-                ChildElement::StrategyParameter(screen) => Some(StrategyParameter::Strategy(
-                    screen
-                        .get_sorting_strategies()
-                        .iter()
-                        .cloned()
-                        .map(Box::new)
-                        .collect(),
-                )),
+                ChildElement::StrategyParameter(screen) => {
+                    Some(StrategyParameter::Strategy(screen.get_sorting_strategies()))
+                }
                 ChildElement::StringParameter(screen) => {
                     screen.get_value().map(StrategyParameter::SingleString)
                 }

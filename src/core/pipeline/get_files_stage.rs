@@ -1,25 +1,21 @@
+use crate::core::pipeline::pipeline_data::PipelineContext;
+
 use super::super::error;
 
 use super::{stage::PipelineStage, PipelineData};
 
-pub struct GetFilesStage {
-    options: crate::core::sorter::SortOptions,
-    input: String,
-}
-
-impl GetFilesStage {
-    pub fn new(options: crate::core::sorter::SortOptions, input: String) -> Self {
-        GetFilesStage { options, input }
-    }
-}
-
+pub struct GetFilesStage;
 impl PipelineStage<PipelineData, error::Error> for GetFilesStage {
-    fn execute(&self, data: PipelineData) -> Result<PipelineData, error::Error> {
+    fn execute(
+        &self,
+        context: PipelineContext,
+        data: PipelineData,
+    ) -> Result<PipelineData, error::Error> {
         match data {
             PipelineData::Empty => {
                 let files_list: Result<Vec<std::path::PathBuf>, error::Error> =
-                    if self.options.root_level_only {
-                        std::fs::read_dir(&self.input)
+                    if context.options().root_level_only {
+                        std::fs::read_dir(&context.input_dir())
                             .map_err(error::Error::IO)?
                             .filter_map(|entry| match entry {
                                 Ok(e) => match e.file_type() {
@@ -32,7 +28,7 @@ impl PipelineStage<PipelineData, error::Error> for GetFilesStage {
                             .collect::<Result<_, _>>()
                             .map_err(error::Error::IO)
                     } else {
-                        read_recursively(std::path::Path::new(&self.input))
+                        read_recursively(std::path::Path::new(&context.input_dir()))
                             .map_err(error::Error::IO)
                     };
 

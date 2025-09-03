@@ -1,13 +1,3 @@
-use std::path::PathBuf;
-
-pub type FullSorterReport = Vec<SorterReport>;
-
-#[derive(Clone, Debug)]
-pub struct SorterReport {
-    pub input_filename: PathBuf,
-    pub result: Result<PathBuf, std::rc::Rc<super::error::Error>>,
-}
-
 #[derive(Clone, Debug)]
 pub struct SortOptions {
     pub dry_run: bool,

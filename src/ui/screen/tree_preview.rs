@@ -8,7 +8,7 @@ use iced::{
 };
 
 use crate::{
-    core::sorter::FullSorterReport,
+    core::report::FullReport,
     ui::{
         custom_theme,
         widget::{alert::alert, icon},
@@ -32,7 +32,7 @@ pub enum Event {
 }
 
 impl TreePreview {
-    pub fn new(reports: FullSorterReport) -> Self {
+    pub fn new(reports: FullReport) -> Self {
         TreePreview {
             root_node: node::Node::from(
                 reports

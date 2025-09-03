@@ -1,27 +1,23 @@
+use crate::core::pipeline::pipeline_data::PipelineContext;
+
 use super::super::error;
 
 use super::{stage::PipelineStage, PipelineData};
 
-pub struct ApplyTransformationStage {
-    options: crate::core::sorter::SortOptions,
-    input: String,
-}
-
-impl ApplyTransformationStage {
-    pub fn new(options: crate::core::sorter::SortOptions, input: String) -> Self {
-        ApplyTransformationStage { options, input }
-    }
-}
-
+pub struct ApplyTransformationStage;
 impl PipelineStage<PipelineData, error::Error> for ApplyTransformationStage {
-    fn execute(&self, data: PipelineData) -> Result<PipelineData, error::Error> {
+    fn execute(
+        &self,
+        context: PipelineContext,
+        data: PipelineData,
+    ) -> Result<PipelineData, error::Error> {
         match data {
             PipelineData::Report(sorter_reports) => {
                 let reports = move_files_from_report(sorter_reports);
 
-                if !self.options.root_level_only {
+                if !context.options().root_level_only {
                     remove_empty_directories(
-                        &std::path::PathBuf::from(self.input.to_string()).as_path(),
+                        &std::path::PathBuf::from(context.input_dir()).as_path(),
                     )
                     .map_err(error::Error::IO)?;
                 }
@@ -40,8 +36,8 @@ impl std::fmt::Display for ApplyTransformationStage {
 }
 
 fn move_files_from_report(
-    mut reports: crate::core::sorter::FullSorterReport,
-) -> crate::core::sorter::FullSorterReport {
+    mut reports: crate::core::report::FullReport,
+) -> crate::core::report::FullReport {
     for report in reports.iter_mut() {
         if let Ok(target) = &mut report.result {
             report.result =
