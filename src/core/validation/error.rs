@@ -1,10 +1,8 @@
-use crate::core::strategy_validator::StrategyValidator;
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum Error {
-    MissingMandatoryParameter(StrategyValidator),
+    MissingMandatoryParameter(super::ParameterDetail),
     UnknownParameter(String),
-    TypeError(StrategyValidator),
+    TypeError(super::ParameterDetail),
 }
 
 impl std::fmt::Display for Error {

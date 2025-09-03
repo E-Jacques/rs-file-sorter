@@ -5,9 +5,9 @@ use rsft_utils::common::file_or_dir_exists;
 use crate::{
     cli::cli_handler::parser::ArgDatum,
     core::{
-        sorting_strategy::SortingStrategy,
-        strategy_parameter::{StrategyParameter, StrategyParameterKind},
-        strategy_validator::StrategyValidator,
+        parameter::{StrategyParameter, StrategyParameterKind},
+        strategy::Strategy,
+        validation,
     },
     sorting_strategies::{
         manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
@@ -28,7 +28,7 @@ pub static STACK: &str = "stack";
 
 static PARAMETER_SEP: &'static str = "=";
 
-impl std::fmt::Display for crate::core::sorter::SorterReport {
+impl std::fmt::Display for crate::core::report::Report {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.result {
             Ok(target) => {
@@ -46,18 +46,19 @@ impl std::fmt::Display for crate::core::sorter::SorterReport {
     }
 }
 
-impl SortingStrategy {
-    pub fn get_validator(&self, name: &String) -> Option<&StrategyValidator> {
-        self.validators
-            .iter()
-            .find(|validator| validator.name == *name)
-    }
+fn get_strategy_validator(
+    strategy: Box<dyn Strategy>,
+    name: &String,
+) -> Option<validation::ParameterDetail> {
+    strategy
+        .parameter_details()
+        .into_iter()
+        .find(|detail| detail.name == *name)
 }
 
 pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Logger) {
     let sorting_strategies_list: StrategyCatalog =
         get_metadata_catalog().with(&get_manipulation_catalog());
-    println!("{:?}", args);
 
     let dry_run: bool = get_bool_arg_value(&args, DRY_RUN);
     let root_level_only: bool = get_bool_arg_value(&args, ROOT_ONLY);
@@ -68,7 +69,7 @@ pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Log
                 input_dir,
                 output_dir,
                 sorting_strategies,
-                crate::core::sorter::SortOptions {
+                crate::core::options::SortOptions {
                     dry_run,
                     root_level_only,
                 },
@@ -97,7 +98,7 @@ fn get_cli_inputs(
     params: Vec<String>,
     stack_arg_name: &str,
     sorting_strategies_list: StrategyCatalog,
-) -> Result<(String, String, Vec<SortingStrategy>), super::error::Error> {
+) -> Result<(String, String, Vec<Box<dyn Strategy>>), super::error::Error> {
     let (input, output) = get_directories(params)?;
     let stacks = get_stacks(args, stack_arg_name)?;
     let sorting_strategies = get_storting_strategies(stacks, sorting_strategies_list)?;
@@ -157,7 +158,7 @@ fn get_directories(params: Vec<String>) -> Result<(String, String), super::error
 fn get_storting_strategies(
     stacks: Vec<ArgDatum>,
     strategy_catalog: StrategyCatalog,
-) -> Result<Vec<SortingStrategy>, super::error::Error> {
+) -> Result<Vec<Box<dyn Strategy>>, super::error::Error> {
     let all_strategy_names = strategy_catalog.get_names().join(", ");
 
     stacks
@@ -174,9 +175,9 @@ fn get_storting_strategies(
 
             if let Some(parsed_arg) = arg_datum.get_child(PARAMETER) {
                 for (key, value) in &get_parameters_from_parsed_args(parsed_arg) {
-                    if let Some(parameter_value) =
-                        strategy.get_validator(key).and_then(|validator| {
-                            get_parameter_value(&strategy_catalog, validator, value)
+                    if let Some(parameter_value) = get_strategy_validator(strategy.clone(), key)
+                        .and_then(|validator| {
+                            get_parameter_value(&strategy_catalog, &validator, value)
                         })
                     {
                         strategy.add_parameter(key.clone(), parameter_value);
@@ -191,7 +192,7 @@ fn get_storting_strategies(
 
 fn get_parameter_value(
     strategy_catalog: &StrategyCatalog,
-    validator: &StrategyValidator,
+    validator: &validation::ParameterDetail,
     value: &Vec<String>,
 ) -> Option<StrategyParameter> {
     match validator.kind {
@@ -200,7 +201,6 @@ fn get_parameter_value(
                 .iter()
                 .map(|v| strategy_catalog.get_strategy(v))
                 .flatten()
-                .map(Box::new)
                 .collect(),
         )),
         StrategyParameterKind::Choice(_) | StrategyParameterKind::SingleString => value

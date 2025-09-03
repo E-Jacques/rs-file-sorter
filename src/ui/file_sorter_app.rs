@@ -1,7 +1,7 @@
 use iced::{widget::row, Element};
 
 use crate::{
-    core::sorter::FullSorterReport,
+    core::report::FullReport,
     ui::{
         screen::{
             sorter_form::{self, SortPayload, SorterForm},
@@ -63,7 +63,7 @@ impl FileSorterApp {
         self.pipeline = Some(crate::core::SortPipeline::new(
             sort_payload.input,
             sort_payload.output,
-            sort_payload.sorting_strategies,
+            sort_payload.strategies,
             sort_payload.options.clone(),
         ));
 
@@ -94,7 +94,7 @@ impl FileSorterApp {
         self.sorter_form.set_log_message(log_messages);
     }
 
-    fn handle_report(&mut self, reports: FullSorterReport) {
+    fn handle_report(&mut self, reports: FullReport) {
         let mut log_messages: Vec<LogMessage> = vec![];
 
         for report in reports {

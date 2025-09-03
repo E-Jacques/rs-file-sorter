@@ -1,26 +1,20 @@
+use crate::core::pipeline::pipeline_data::PipelineContext;
+
 use super::super::error;
 
 use super::{stage::PipelineStage, PipelineData};
-
-pub struct ValidationStage {
-    strategies: Vec<crate::core::sorting_strategy::SortingStrategy>,
-}
-
-impl ValidationStage {
-    pub fn new(strategies: Vec<crate::core::sorting_strategy::SortingStrategy>) -> Self {
-        ValidationStage { strategies }
-    }
-}
-
+pub struct ValidationStage;
 impl PipelineStage<PipelineData, error::Error> for ValidationStage {
-    fn execute(&self, data: PipelineData) -> Result<PipelineData, error::Error> {
+    fn execute(
+        &self,
+        context: PipelineContext,
+        data: PipelineData,
+    ) -> Result<PipelineData, error::Error> {
         match data {
             PipelineData::Empty => {
                 // validate the strategies
-                for strategy in &self.strategies {
-                    strategy
-                        .validate()
-                        .map_err(|err| error::Error::Validation(strategy.name.clone(), err))?;
+                for strategy in &context.strategies() {
+                    strategy.validate().map_err(error::Error::Validation)?;
                 }
 
                 Ok(PipelineData::Empty)
@@ -40,8 +34,9 @@ impl std::fmt::Display for ValidationStage {
 mod tests {
     use crate::{
         core::{
-            pipeline::pipeline_data::PipelineDataKind, sorting_strategy::SortingStrategy,
-            strategy_parameter::StrategyParameterKind, strategy_validator::StrategyValidator,
+            context::ProcessContext,
+            pipeline::pipeline_data::PipelineDataKind,
+            strategy::{AddParameter, Apply, Name, ParameterDetails, Strategy},
         },
         sorting_strategies::metadata_catalog::get_metadata_catalog,
     };
@@ -56,9 +51,10 @@ mod tests {
             .iter()
             .filter_map(|name| catalog.get_strategy(name))
             .collect();
-        let pipeline_stage = ValidationStage::new(strategies);
 
-        let data = pipeline_stage.execute(PipelineData::Empty);
+        let mut context = PipelineContext::default();
+        context.set_strategies(strategies);
+        let data = ValidationStage.execute(context, PipelineData::Empty);
         assert!(data.is_ok());
         assert_eq!(data.unwrap().kind(), PipelineDataKind::Empty)
     }
@@ -71,25 +67,62 @@ mod tests {
             .iter()
             .filter_map(|name| catalog.get_strategy(name))
             .collect();
-        let pipeline_stage = ValidationStage::new(strategies);
 
-        let data = pipeline_stage.execute(PipelineData::Paths(vec![]));
+        let mut context = PipelineContext::default();
+        context.set_strategies(strategies);
+
+        let data = ValidationStage.execute(context, PipelineData::Paths(vec![]));
         assert!(data.is_err());
         assert_eq!(data.unwrap_err().kind(), super::error::ErrorKind::Pipeline)
     }
 
     #[test]
     fn test_should_return_validation_error_if_not_valid() {
-        let mut strategy =
-            SortingStrategy::new("my-strategy", |_, _, _| Some(String::from("test")));
-        strategy.add_validator(StrategyValidator::new(
-            "my-validator",
-            StrategyParameterKind::SingleString,
-            true,
-        ));
+        #[derive(Debug, Clone)]
+        struct MyStrategy;
+        impl crate::core::strategy::Validate for MyStrategy {
+            fn validate(&self) -> Result<(), crate::core::validation::error::Error> {
+                Err(crate::core::validation::error::Error::UnknownParameter(
+                    String::from("unknown-param"),
+                ))
+            }
+        }
 
-        let pipeline_stage = ValidationStage::new(vec![strategy]);
-        let data = pipeline_stage.execute(PipelineData::Empty);
+        impl Apply for MyStrategy {
+            fn apply(&self, _: &std::path::PathBuf, _: &std::fs::File) -> Option<String> {
+                None
+            }
+        }
+
+        impl ProcessContext for MyStrategy {
+            fn process_context(
+                &mut self,
+                _: crate::core::context::StrategyContext,
+            ) -> Result<(), error::Error> {
+                Ok(())
+            }
+        }
+
+        impl AddParameter for MyStrategy {
+            fn add_parameter(&mut self, _: String, _: crate::core::parameter::StrategyParameter) {}
+        }
+
+        impl ParameterDetails for MyStrategy {
+            fn parameter_details(&self) -> Vec<crate::core::validation::ParameterDetail> {
+                vec![]
+            }
+        }
+
+        impl Name for MyStrategy {
+            fn name(&self) -> String {
+                "my-strategy".to_string()
+            }
+        }
+
+        let strategies: Vec<Box<dyn Strategy>> = vec![Box::new(MyStrategy)];
+        let mut context = PipelineContext::default();
+        context.set_strategies(strategies);
+        let data = ValidationStage.execute(context, PipelineData::Empty);
         assert!(data.is_err());
         assert_eq!(
             data.unwrap_err().kind(),

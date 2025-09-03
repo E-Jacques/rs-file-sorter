@@ -1,98 +1,17 @@
-mod filetype;
-use std::{collections::HashMap, fs::File, str::FromStr};
+mod file_ext_strategy;
+mod file_type_strategy;
+mod month_strategy;
+mod year_strategy;
 
-use crate::{
-    core::{
-        sorting_strategy::SortingStrategy,
-        strategy_parameter::{StrategyParameter, StrategyParameterKind},
-        strategy_validator::StrategyValidator,
-    },
-    sorting_strategies::strategy_catalog::StrategyCatalog,
-    utils::file_manipulator::get_last_modified_time,
-};
+use super::*;
 
-static SUPPORTED_LOCALES: &'static [chrono::Locale] = &[
-    chrono::Locale::fr_FR,
-    chrono::Locale::en_US,
-    chrono::Locale::es_ES,
-];
-const LOCALE_PARAMETER_NAME: &str = "locale";
+use crate::sorting_strategies::strategy_catalog::StrategyCatalog;
 
 pub fn get_metadata_catalog() -> StrategyCatalog {
     StrategyCatalog::new(vec![
-        get_month_sorting_strategy(),
-        get_year_sorting_strategy(),
-        get_file_ext(),
-        get_file_type(),
+        Box::new(month_strategy::MonthStrategy::new()),
+        Box::new(year_strategy::YearStrategy::new()),
+        Box::new(file_ext_strategy::FileExtStrategy::new()),
+        Box::new(file_type_strategy::FileTypeStrategy::new()),
     ])
-}
-
-fn get_month_sorting_strategy() -> SortingStrategy {
-    let mut strategy = SortingStrategy::new(
-        "month",
-        |_, f: &File, parameters: &HashMap<String, StrategyParameter>| match get_last_modified_time(
-            f,
-        ) {
-            Ok(datetime) => {
-                let locale: chrono::Locale =
-                    if let Some(StrategyParameter::SingleString(locale_str)) =
-                        parameters.get(LOCALE_PARAMETER_NAME)
-                    {
-                        chrono::Locale::from_str(locale_str).unwrap_or(chrono::Locale::fr_FR)
-                    } else {
-                        chrono::Locale::fr_FR
-                    };
-
-                let formatted = datetime.format_localized("%m_%B", locale).to_string();
-                Some(formatted)
-            }
-            Err(error) => panic!("{}", format!("Cannot retrieve month number: {:#?}", error)),
-        },
-    );
-    let mut locale_validator = StrategyValidator::new(
-        LOCALE_PARAMETER_NAME,
-        StrategyParameterKind::Choice(
-            SUPPORTED_LOCALES
-                .iter()
-                .map(chrono::Locale::to_string)
-                .collect(),
-        ),
-        true,
-    );
-    locale_validator.with_default_value(StrategyParameter::SingleString(
-        chrono::Locale::en_US.to_string(),
-    ));
-    strategy.add_validator(locale_validator);
-
-    strategy
-}
-
-fn get_year_sorting_strategy() -> SortingStrategy {
-    SortingStrategy::new("year", |_, f: &File, _| match get_last_modified_time(f) {
-        Ok(datetime) => Some(datetime.format("%Y").to_string()),
-        Err(error) => panic!("{}", format!("Cannot retrieve year number: {:#?}", error)),
-    })
-}
-
-fn file_ext(file_path: &std::path::PathBuf) -> String {
-    file_path
-        .extension()
-        .map(|os_str| os_str.to_str())
-        .flatten()
-        .unwrap_or("unknown")
-        .to_string()
-}
-
-fn get_file_ext() -> SortingStrategy {
-    SortingStrategy::new("file extension", |file_path: &std::path::PathBuf, _, _| {
-        Some(file_ext(file_path))
-    })
-}
-
-fn get_file_type() -> SortingStrategy {
-    SortingStrategy::new("file type", |file_path: &std::path::PathBuf, _, _| {
-        let ext = file_ext(file_path);
-        let file_type = filetype::FileType::from_extension(&ext).into();
-        Some(file_type)
-    })
 }

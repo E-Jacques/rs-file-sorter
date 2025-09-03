@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use iced::{widget::column, Element, Length};
 
 use crate::{
-    core::sorting_strategy::SortingStrategy, sorting_strategies::strategy_catalog::StrategyCatalog,
+    core::strategy::Strategy, sorting_strategies::strategy_catalog::StrategyCatalog,
     ui::widget::button::primary_button::primary_button, utils::string_manipulator::random_string,
 };
 
@@ -117,7 +117,7 @@ impl EditableTree {
         }
     }
 
-    pub fn get_sorting_strategies(&self) -> Vec<SortingStrategy> {
+    pub fn get_sorting_strategies(&self) -> Vec<Box<dyn Strategy>> {
         self.items
             .iter()
             .filter_map(|dir| dir.element.get_sorting_strategy())
