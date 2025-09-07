@@ -14,7 +14,10 @@ use get_files_stage::GetFilesStage;
 use pipeline_data::PipelineData;
 use validation_stage::ValidationStage;
 
-use crate::core::{pipeline::pipeline_data::PipelineContext, strategy::Strategy};
+use crate::core::{
+    pipeline::{apply_context_stage::ApplyContextStage, pipeline_data::PipelineContext},
+    strategy::Strategy,
+};
 
 trait PipelineStageDisplay:
     stage::PipelineStage<PipelineData, super::error::Error> + std::fmt::Display

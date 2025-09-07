@@ -1,3 +1,4 @@
+pub mod analysis_catalog;
 pub mod file;
 pub mod manipulation_catalog;
 pub mod metadata_catalog;
