@@ -14,12 +14,11 @@ impl PipelineStage<PipelineData, error::Error> for ApplyContextStage {
         context: PipelineContext,
         data: PipelineData,
     ) -> Result<PipelineData, error::Error> {
-        let strategy_context = StrategyContext {
-            files: match &data {
-                PipelineData::Paths(paths) => paths.clone(),
-                _ => return Err(error::Error::Pipeline),
-            },
+        let files = match &data {
+            PipelineData::Paths(paths) => paths.clone(),
+            _ => return Err(error::Error::Pipeline),
         };
+        let strategy_context = StrategyContext::new(files);
         let mut new_context = context.clone();
         let new_strategies = new_context
             .strategies()

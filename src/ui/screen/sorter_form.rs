@@ -10,7 +10,8 @@ use iced::{
 use crate::{
     core::{options::SortOptions, strategy::Strategy},
     sorting_strategies::{
-        manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
+        analysis_catalog::get_analysis_catalog, manipulation_catalog::get_manipulation_catalog,
+        metadata_catalog::get_metadata_catalog,
     },
     ui::{
         file_sorter_app::LogMessage,
@@ -63,7 +64,9 @@ impl SorterForm {
             output_path: String::new(),
             option_form: option_form::OptionForm::new(),
             editable_file_tree: editable_tree::editable_tree::EditableTree::new(
-                get_metadata_catalog().with(&get_manipulation_catalog()),
+                get_metadata_catalog()
+                    .with(&get_manipulation_catalog())
+                    .with(&get_analysis_catalog()),
             ),
             directory_input: directory_input::DirectoryInput::new(None, "Input path".to_string()),
             directory_output: directory_input::DirectoryInput::new(None, "Output path".to_string()),
