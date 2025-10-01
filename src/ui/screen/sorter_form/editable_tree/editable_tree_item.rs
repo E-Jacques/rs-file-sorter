@@ -6,34 +6,16 @@ use iced::{
 };
 
 use crate::{
-    core::{
-        parameter::{StrategyParameter, StrategyParameterKind},
-        strategy::Strategy,
-    },
+    core::strategy::Strategy,
     sorting_strategies::strategy_catalog::StrategyCatalog,
     ui::{
         custom_theme,
-        screen::sorter_form::editable_tree::editable_tree_item_number::EditableTreeItemNumber,
+        screen::sorter_form::editable_tree::child_element::ChildElement,
         widget::{button::icon_button::icon_button, icon},
     },
 };
 
-use super::{
-    editable_tree::EditableTree,
-    editable_tree_item_combo_box::EditableTreeItemComboBox,
-    editable_tree_item_text_input::EditableTreeItemTextInput,
-    shared::{
-        DirectoryMovement, NumberParameterInput, StrategyOptions, StringParameterInput,
-        TreeInputMessage, TreeItemMessage,
-    },
-};
-
-#[derive(Debug, Clone)]
-enum ChildElement {
-    StrategyParameter(EditableTree),
-    StringParameter(Box<dyn StringParameterInput>),
-    NumberParameter(Box<dyn NumberParameterInput>),
-}
+use super::shared::{DirectoryMovement, StrategyOptions, TreeItemMessage};
 
 #[derive(Debug, Clone)]
 pub struct EditableTreeItem {
@@ -100,34 +82,9 @@ impl EditableTreeItem {
     fn render_all_elements(&self) -> Element<'_, TreeItemMessage> {
         let mut target_column = Column::new();
 
-        for (name, screen) in &self.child_elements {
+        for (name, child_element) in &self.child_elements {
             let param_name_text: Element<'_, TreeItemMessage> = text(name).into();
-            let editable_tree_element: Element<'_, TreeItemMessage> = match screen {
-                ChildElement::StrategyParameter(editable_tree_item) => {
-                    editable_tree_item.view().map(move |child_message| {
-                        TreeItemMessage::ParameterChanged(
-                            name.clone(),
-                            Box::new(TreeInputMessage::EditableTree(child_message)),
-                        )
-                    })
-                }
-                ChildElement::StringParameter(element) => {
-                    element.view().map(move |child_message| {
-                        TreeItemMessage::ParameterChanged(
-                            name.clone(),
-                            Box::new(TreeInputMessage::TextInput(child_message)),
-                        )
-                    })
-                }
-                ChildElement::NumberParameter(editable_tree_item) => {
-                    editable_tree_item.view().map(move |child_message| {
-                        TreeItemMessage::ParameterChanged(
-                            name.clone(),
-                            Box::new(TreeInputMessage::TextInput(child_message)),
-                        )
-                    })
-                }
-            };
+            let editable_tree_element: Element<'_, TreeItemMessage> = child_element.view(name);
             let col: Element<'_, TreeItemMessage> = Column::new()
                 .push(param_name_text)
                 .push(editable_tree_element)
@@ -146,25 +103,8 @@ impl EditableTreeItem {
                 self.set_strategy_properties_setter();
             }
             TreeItemMessage::ParameterChanged(parameter_name, parameter_message) => {
-                match *parameter_message {
-                    TreeInputMessage::EditableTree(tree_message) => {
-                        if let Some(ChildElement::StrategyParameter(element)) =
-                            self.child_elements.get_mut(&parameter_name)
-                        {
-                            element.update(tree_message);
-                        }
-                    }
-                    TreeInputMessage::TextInput(tree_text_input_message) => {
-                        if let Some(ChildElement::StringParameter(element)) =
-                            self.child_elements.get_mut(&parameter_name)
-                        {
-                            element.update(tree_text_input_message);
-                        } else if let Some(ChildElement::NumberParameter(element)) =
-                            self.child_elements.get_mut(&parameter_name)
-                        {
-                            element.update(tree_text_input_message);
-                        }
-                    }
+                if let Some(child_element) = self.child_elements.get_mut(&parameter_name) {
+                    child_element.update(*parameter_message);
                 }
             }
             _ => (),
@@ -176,46 +116,10 @@ impl EditableTreeItem {
 
         if let Some(strategy) = self.get_sorting_strategy() {
             for validator in strategy.parameter_details() {
-                match validator.kind {
-                    StrategyParameterKind::Strategy => {
-                        self.child_elements.insert(
-                            validator.name.clone(),
-                            ChildElement::StrategyParameter(EditableTree::new(
-                                self.strategy_catalog.clone(),
-                            )),
-                        );
-                    }
-                    StrategyParameterKind::SingleString => {
-                        self.child_elements.insert(
-                            validator.name.clone(),
-                            ChildElement::StringParameter(Box::new(
-                                EditableTreeItemTextInput::new("Insert a value here".to_string()),
-                            )),
-                        );
-                    }
-                    StrategyParameterKind::Choice(items) => {
-                        let default_value: Option<String> = match validator.default_value {
-                            Some(StrategyParameter::SingleString(value)) => Some(value),
-                            _ => None,
-                        };
-                        self.child_elements.insert(
-                            validator.name.clone(),
-                            ChildElement::StringParameter(Box::new(EditableTreeItemComboBox::new(
-                                "Select an option".to_string(),
-                                default_value,
-                                items,
-                            ))),
-                        );
-                    }
-                    StrategyParameterKind::Number => {
-                        self.child_elements.insert(
-                            validator.name.clone(),
-                            ChildElement::NumberParameter(Box::new(EditableTreeItemNumber::new(
-                                "Insert a number here".to_string(),
-                            ))),
-                        );
-                    }
-                }
+                self.child_elements.insert(
+                    validator.name.clone(),
+                    ChildElement::create(validator, self.strategy_catalog.clone()),
+                );
             }
         }
     }
@@ -225,19 +129,7 @@ impl EditableTreeItem {
         let mut strategy = self.strategy_catalog.get_strategy(name)?;
 
         for (key, child_element) in &self.child_elements {
-            let maybe_value: Option<StrategyParameter> = match child_element {
-                ChildElement::StrategyParameter(screen) => {
-                    Some(StrategyParameter::Strategy(screen.get_sorting_strategies()))
-                }
-                ChildElement::StringParameter(screen) => {
-                    screen.get_value().map(StrategyParameter::SingleString)
-                }
-                ChildElement::NumberParameter(screen) => {
-                    screen.get_value().map(StrategyParameter::Number)
-                }
-            };
-
-            if let Some(value) = maybe_value {
+            if let Some(value) = child_element.strategy_parameter() {
                 strategy.add_parameter(key.clone(), value);
             }
         }

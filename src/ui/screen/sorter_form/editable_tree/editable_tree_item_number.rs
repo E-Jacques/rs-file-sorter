@@ -2,7 +2,7 @@ use iced::{widget, Element};
 
 use crate::ui::{
     custom_theme,
-    screen::sorter_form::editable_tree::shared::{NumberParameterInput, TreeTextInputMessage},
+    screen::sorter_form::editable_tree::shared::{ParameterInput, TreeTextInputMessage},
 };
 
 #[derive(Debug, Clone)]
@@ -12,15 +12,15 @@ pub struct EditableTreeItemNumber {
 }
 
 impl EditableTreeItemNumber {
-    pub fn new(placeholder: String) -> EditableTreeItemNumber {
+    pub fn new(placeholder: String, default_value: Option<usize>) -> EditableTreeItemNumber {
         EditableTreeItemNumber {
             placeholder,
-            value: None,
+            value: default_value,
         }
     }
 }
 
-impl NumberParameterInput for EditableTreeItemNumber {
+impl ParameterInput<usize> for EditableTreeItemNumber {
     fn view(&self) -> Element<'_, TreeTextInputMessage> {
         let display_value = self.value.map(|v| v.to_string()).unwrap_or("".to_string());
         widget::text_input(&self.placeholder, &display_value)
@@ -39,7 +39,7 @@ impl NumberParameterInput for EditableTreeItemNumber {
         self.value
     }
 
-    fn clone_box(&self) -> Box<dyn NumberParameterInput> {
+    fn clone_box(&self) -> Box<dyn ParameterInput<usize>> {
         Box::new(self.clone())
     }
 }
