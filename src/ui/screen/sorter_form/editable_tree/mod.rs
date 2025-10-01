@@ -1,3 +1,4 @@
+pub mod child_element;
 pub mod editable_tree;
 pub mod editable_tree_item;
 pub mod editable_tree_item_combo_box;

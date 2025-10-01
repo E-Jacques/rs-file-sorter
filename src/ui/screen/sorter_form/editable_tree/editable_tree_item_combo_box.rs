@@ -1,8 +1,8 @@
 use iced::{widget, Element};
 
-use crate::ui::custom_theme;
+use crate::ui::{custom_theme, screen::sorter_form::editable_tree::shared::ParameterInput};
 
-use super::shared::{StringParameterInput, TreeTextInputMessage};
+use super::shared::TreeTextInputMessage;
 
 #[derive(Debug, Clone)]
 pub struct EditableTreeItemComboBox {
@@ -25,7 +25,7 @@ impl EditableTreeItemComboBox {
     }
 }
 
-impl StringParameterInput for EditableTreeItemComboBox {
+impl ParameterInput<String> for EditableTreeItemComboBox {
     fn view(&self) -> Element<'_, TreeTextInputMessage> {
         widget::combo_box(
             &self.state,
@@ -46,7 +46,7 @@ impl StringParameterInput for EditableTreeItemComboBox {
     fn get_value(&self) -> Option<String> {
         self.value.clone()
     }
-    fn clone_box(&self) -> Box<dyn StringParameterInput> {
+    fn clone_box(&self) -> Box<dyn ParameterInput<String>> {
         Box::new(self.clone())
     }
 }

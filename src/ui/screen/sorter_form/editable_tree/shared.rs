@@ -24,6 +24,18 @@ pub enum TreeInputMessage {
     TextInput(TreeTextInputMessage),
 }
 
+impl Into<TreeInputMessage> for TreeMessage {
+    fn into(self) -> TreeInputMessage {
+        TreeInputMessage::EditableTree(self)
+    }
+}
+
+impl Into<TreeInputMessage> for TreeTextInputMessage {
+    fn into(self) -> TreeInputMessage {
+        TreeInputMessage::TextInput(self)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum TreeItemMessage {
     DirectoryRemoved,
@@ -32,28 +44,15 @@ pub enum TreeItemMessage {
     ParameterChanged(String, Box<TreeInputMessage>),
 }
 
-pub trait StringParameterInput: std::fmt::Debug {
+pub trait ParameterInput<T>: std::fmt::Debug {
     fn view(&self) -> Element<'_, TreeTextInputMessage>;
     fn update(&mut self, msg: TreeTextInputMessage);
-    fn get_value(&self) -> Option<String>;
-    fn clone_box(&self) -> Box<dyn StringParameterInput>;
+    fn get_value(&self) -> Option<T>;
+    fn clone_box(&self) -> Box<dyn ParameterInput<T>>;
 }
 
-impl Clone for Box<dyn StringParameterInput> {
-    fn clone(&self) -> Box<dyn StringParameterInput> {
-        self.clone_box()
-    }
-}
-
-pub trait NumberParameterInput: std::fmt::Debug {
-    fn view(&self) -> Element<'_, TreeTextInputMessage>;
-    fn update(&mut self, msg: TreeTextInputMessage);
-    fn get_value(&self) -> Option<usize>;
-    fn clone_box(&self) -> Box<dyn NumberParameterInput>;
-}
-
-impl Clone for Box<dyn NumberParameterInput> {
-    fn clone(&self) -> Box<dyn NumberParameterInput> {
+impl<T> Clone for Box<dyn ParameterInput<T>> {
+    fn clone(&self) -> Box<dyn ParameterInput<T>> {
         self.clone_box()
     }
 }
