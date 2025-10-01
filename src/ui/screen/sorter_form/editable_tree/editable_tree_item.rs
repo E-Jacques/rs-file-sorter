@@ -7,12 +7,13 @@ use iced::{
 
 use crate::{
     core::{
-        strategy::Strategy,
         parameter::{StrategyParameter, StrategyParameterKind},
+        strategy::Strategy,
     },
     sorting_strategies::strategy_catalog::StrategyCatalog,
     ui::{
         custom_theme,
+        screen::sorter_form::editable_tree::editable_tree_item_number::EditableTreeItemNumber,
         widget::{button::icon_button::icon_button, icon},
     },
 };
@@ -22,7 +23,8 @@ use super::{
     editable_tree_item_combo_box::EditableTreeItemComboBox,
     editable_tree_item_text_input::EditableTreeItemTextInput,
     shared::{
-        DirectoryMovement, StrategyOptions, StringParameterInput, TreeInputMessage, TreeItemMessage,
+        DirectoryMovement, NumberParameterInput, StrategyOptions, StringParameterInput,
+        TreeInputMessage, TreeItemMessage,
     },
 };
 
@@ -30,6 +32,7 @@ use super::{
 enum ChildElement {
     StrategyParameter(EditableTree),
     StringParameter(Box<dyn StringParameterInput>),
+    NumberParameter(Box<dyn NumberParameterInput>),
 }
 
 #[derive(Debug, Clone)]
@@ -116,6 +119,14 @@ impl EditableTreeItem {
                         )
                     })
                 }
+                ChildElement::NumberParameter(editable_tree_item) => {
+                    editable_tree_item.view().map(move |child_message| {
+                        TreeItemMessage::ParameterChanged(
+                            name.clone(),
+                            Box::new(TreeInputMessage::TextInput(child_message)),
+                        )
+                    })
+                }
             };
             let col: Element<'_, TreeItemMessage> = Column::new()
                 .push(param_name_text)
@@ -145,6 +156,10 @@ impl EditableTreeItem {
                     }
                     TreeInputMessage::TextInput(tree_text_input_message) => {
                         if let Some(ChildElement::StringParameter(element)) =
+                            self.child_elements.get_mut(&parameter_name)
+                        {
+                            element.update(tree_text_input_message);
+                        } else if let Some(ChildElement::NumberParameter(element)) =
                             self.child_elements.get_mut(&parameter_name)
                         {
                             element.update(tree_text_input_message);
@@ -192,6 +207,14 @@ impl EditableTreeItem {
                             ))),
                         );
                     }
+                    StrategyParameterKind::Number => {
+                        self.child_elements.insert(
+                            validator.name.clone(),
+                            ChildElement::NumberParameter(Box::new(EditableTreeItemNumber::new(
+                                "Insert a number here".to_string(),
+                            ))),
+                        );
+                    }
                 }
             }
         }
@@ -208,6 +231,9 @@ impl EditableTreeItem {
                 }
                 ChildElement::StringParameter(screen) => {
                     screen.get_value().map(StrategyParameter::SingleString)
+                }
+                ChildElement::NumberParameter(screen) => {
+                    screen.get_value().map(StrategyParameter::Number)
                 }
             };
 

@@ -4,6 +4,7 @@ use std::fmt::Display;
 pub enum StrategyParameter {
     Strategy(Vec<Box<dyn super::strategy::Strategy>>),
     SingleString(String),
+    Number(usize),
 }
 
 impl PartialEq for StrategyParameter {
@@ -22,6 +23,7 @@ impl PartialEq for StrategyParameter {
 pub enum StrategyParameterKind {
     Strategy,
     SingleString,
+    Number,
     Choice(Vec<String>),
 }
 
@@ -34,16 +36,18 @@ impl Display for StrategyParameterKind {
                 let list_str = choices.join(",");
                 return write!(f, "choice: ({})", list_str);
             }
+            StrategyParameterKind::Number => "number",
         })
     }
 }
 
 impl StrategyParameterKind {
+    /// Check if the given value matches the kind.
     pub fn is_matching(&self, value: &StrategyParameter) -> bool {
         match self {
-            StrategyParameterKind::Strategy | StrategyParameterKind::SingleString => {
-                value.kind() == *self
-            }
+            StrategyParameterKind::Strategy
+            | StrategyParameterKind::SingleString
+            | StrategyParameterKind::Number => value.kind() == *self,
             StrategyParameterKind::Choice(items) => {
                 if let StrategyParameter::SingleString(single_string) = value {
                     items.iter().any(|item| item == single_string)
@@ -60,6 +64,7 @@ impl StrategyParameter {
         match self {
             StrategyParameter::SingleString(_) => StrategyParameterKind::SingleString,
             StrategyParameter::Strategy(_) => StrategyParameterKind::Strategy,
+            StrategyParameter::Number(_) => StrategyParameterKind::Number,
         }
     }
 }
