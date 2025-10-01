@@ -1,7 +1,10 @@
 // TODO : Paramétrer le nombre de cluster. Créer un input number. Améliorer le fonctionnement de KMean avec des strategies.
 
 use crate::{
-    core::{parameter, strategy},
+    core::{
+        parameter::{self, StrategyParameter},
+        strategy, validation,
+    },
     sorting_strategies::utils,
     utils::{
         cluster::{k_mean, point},
@@ -9,8 +12,9 @@ use crate::{
     },
 };
 
-const CLUSTER_NUMBER: usize = 5;
+const DEFAULT_CLUSTER_NUMBER: usize = 5;
 const TF_IDF_ITERATION: usize = 400;
+const CLUSTER_NUMBER_PARAM_NAME: &str = "cluster.number";
 
 #[derive(Debug, Clone)]
 pub struct TextSemanticStrategy {
@@ -21,9 +25,20 @@ pub struct TextSemanticStrategy {
 
 impl TextSemanticStrategy {
     pub fn new() -> Self {
+        let mut cluster_number_param = validation::ParameterDetail::new(
+            CLUSTER_NUMBER_PARAM_NAME,
+            parameter::StrategyParameterKind::Number,
+            true,
+        );
+        cluster_number_param.with_default_value(StrategyParameter::Number(DEFAULT_CLUSTER_NUMBER));
+
+        let mut validator = utils::BaseValidator::new();
+        validator.add_validator(cluster_number_param);
+
+        let parameters = validator.default_parameters();
         TextSemanticStrategy {
-            validator: utils::BaseValidator::new(),
-            parameters: std::collections::HashMap::new(),
+            validator,
+            parameters,
             context: std::collections::HashMap::new(),
         }
     }
@@ -96,6 +111,17 @@ impl crate::core::context::ProcessContext for TextSemanticStrategy {
         let tf_idf: nlp::TfIdf = nlp::tf_idf(contents);
 
         // Cluster the files based on their tf-idf values
+        let cluster_number = self
+            .parameters
+            .get(CLUSTER_NUMBER_PARAM_NAME)
+            .and_then(|param| {
+                if let StrategyParameter::Number(n) = param {
+                    Some(*n)
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(DEFAULT_CLUSTER_NUMBER);
         let kmean = k_mean::k_mean(
             tf_idf
                 .tf_idf()
@@ -103,7 +129,7 @@ impl crate::core::context::ProcessContext for TextSemanticStrategy {
                 .cloned()
                 .map(point::Point::new)
                 .collect(),
-            CLUSTER_NUMBER,
+            cluster_number,
             TF_IDF_ITERATION,
         )
         .map_err(|err| crate::core::error::Error::Strategy(err.kind().to_string()))?;

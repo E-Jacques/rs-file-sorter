@@ -208,6 +208,11 @@ fn get_parameter_value(
             .last()
             .cloned()
             .map(StrategyParameter::SingleString),
+        StrategyParameterKind::Number => value
+            .iter()
+            .last()
+            .and_then(|v| v.parse::<usize>().ok())
+            .map(StrategyParameter::Number),
     }
 }
 

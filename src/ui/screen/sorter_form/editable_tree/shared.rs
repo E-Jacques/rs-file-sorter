@@ -44,3 +44,16 @@ impl Clone for Box<dyn StringParameterInput> {
         self.clone_box()
     }
 }
+
+pub trait NumberParameterInput: std::fmt::Debug {
+    fn view(&self) -> Element<'_, TreeTextInputMessage>;
+    fn update(&mut self, msg: TreeTextInputMessage);
+    fn get_value(&self) -> Option<usize>;
+    fn clone_box(&self) -> Box<dyn NumberParameterInput>;
+}
+
+impl Clone for Box<dyn NumberParameterInput> {
+    fn clone(&self) -> Box<dyn NumberParameterInput> {
+        self.clone_box()
+    }
+}
