@@ -1,3 +1,5 @@
+use rand::seq::IndexedRandom;
+
 use super::error;
 use crate::utils::cluster::point;
 
@@ -10,9 +12,9 @@ pub struct KMeanOutput {
 fn init_centroids(points: &Vec<point::Point>, k: usize) -> Vec<point::Point> {
     let mut centroids = vec![];
     for _ in 0..k {
-        let target_i: u32 = rand::random::<u32>() % points.len() as u32;
-        centroids.push(points[target_i as usize].clone());
+        centroids.push(points.choose(&mut rand::rng()).unwrap().clone());
     }
+    centroids.sort();
     centroids
 }
 
