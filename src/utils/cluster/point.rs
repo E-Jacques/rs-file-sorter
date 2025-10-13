@@ -1,7 +1,15 @@
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, PartialOrd)]
 pub struct Point {
     inner: Vec<f32>,
 }
+
+impl Ord for Point {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(other).unwrap()
+    }
+}
+
+impl Eq for Point {}
 
 impl Point {
     pub fn new(inner: Vec<f32>) -> Self {
