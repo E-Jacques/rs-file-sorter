@@ -3,8 +3,13 @@ use std::fmt::Debug;
 use iced::{widget::column, Element, Length};
 
 use crate::{
-    core::strategy::Strategy, sorting_strategies::strategy_catalog::StrategyCatalog,
-    ui::widget::button::primary_button::primary_button, utils::string_manipulator::random_string,
+    core::strategy::Strategy,
+    sorting_strategies::{all_catalog::all_catalog, strategy_catalog::StrategyCatalog},
+    ui::{
+        template::{self, strategy_payload::ParameterValue},
+        widget::button::primary_button::primary_button,
+    },
+    utils::string_manipulator::random_string,
 };
 
 use super::{
@@ -26,7 +31,7 @@ struct Directory {
 
 impl Default for EditableTree {
     fn default() -> Self {
-        EditableTree::new(StrategyCatalog::default())
+        EditableTree::new(all_catalog())
     }
 }
 
@@ -122,5 +127,38 @@ impl EditableTree {
             .iter()
             .filter_map(|dir| dir.element.get_sorting_strategy())
             .collect()
+    }
+
+    pub fn payload(&self) -> Vec<template::strategy_payload::StrategyPayload> {
+        self.items
+            .iter()
+            .map(|dir| dir.element.clone().into())
+            .collect()
+    }
+}
+
+impl From<Vec<template::strategy_payload::StrategyPayload>> for EditableTree {
+    fn from(payloads: Vec<template::strategy_payload::StrategyPayload>) -> Self {
+        let mut editable_tree = EditableTree::new(all_catalog());
+        for payload in payloads {
+            editable_tree.items.push(Directory {
+                id: random_string(10),
+                element: EditableTreeItem::from(payload),
+            });
+        }
+        editable_tree
+    }
+}
+
+impl From<Vec<ParameterValue>> for EditableTree {
+    fn from(values: Vec<ParameterValue>) -> Self {
+        let mut editable_tree = EditableTree::new(all_catalog());
+        for value in values {
+            editable_tree.items.push(Directory {
+                id: random_string(10),
+                element: EditableTreeItem::from(value),
+            });
+        }
+        editable_tree
     }
 }

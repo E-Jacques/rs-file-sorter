@@ -4,9 +4,10 @@ use crate::{
     core::report::FullReport,
     ui::{
         screen::{
-            sorter_form::{self, SortPayload, SorterForm},
+            sorter_form::{self, SorterForm},
             tree_preview::{self, TreePreview},
         },
+        shared,
         widget::alert::AlertSeverity,
     },
 };
@@ -59,7 +60,7 @@ impl FileSorterApp {
         }
     }
 
-    fn sort(&mut self, sort_payload: SortPayload) {
+    fn sort(&mut self, sort_payload: shared::sort_payload::SortPayload) {
         self.pipeline = Some(crate::core::SortPipeline::new(
             sort_payload.input,
             sort_payload.output,
