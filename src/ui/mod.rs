@@ -4,6 +4,8 @@ mod custom_theme;
 mod file_sorter_app;
 mod screen;
 mod settings;
+mod shared;
+mod template;
 mod widget;
 
 pub fn run_app() {

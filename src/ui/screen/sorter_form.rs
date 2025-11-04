@@ -1,6 +1,7 @@
 mod directory_input;
 mod editable_tree;
 mod option_form;
+mod template_manager;
 
 use iced::{
     widget::{column, container, scrollable, Column},
@@ -8,24 +9,14 @@ use iced::{
 };
 
 use crate::{
-    core::{options::SortOptions, strategy::Strategy},
-    sorting_strategies::{
-        analysis_catalog::get_analysis_catalog, manipulation_catalog::get_manipulation_catalog,
-        metadata_catalog::get_metadata_catalog,
-    },
+    sorting_strategies::all_catalog::all_catalog,
     ui::{
         file_sorter_app::LogMessage,
+        shared,
+        template::{self, template::Template},
         widget::{alert, button::primary_button},
     },
 };
-
-#[derive(Debug, Clone)]
-pub struct SortPayload {
-    pub input: String,
-    pub output: String,
-    pub strategies: Vec<Box<dyn Strategy>>,
-    pub options: SortOptions,
-}
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -33,12 +24,13 @@ pub enum Message {
     OutputPathChanged(directory_input::DirectoryInputMessage),
     EditableFileTreeMessage(editable_tree::shared::TreeMessage),
     OptionFormMessage(option_form::Message),
+    TemplateManagerMessage(template_manager::Message),
     Sort,
 }
 
 #[derive(Debug, Clone)]
 pub enum Event {
-    Sort(SortPayload),
+    Sort(shared::sort_payload::SortPayload),
 }
 
 pub struct SorterForm {
@@ -49,6 +41,8 @@ pub struct SorterForm {
     directory_input: directory_input::DirectoryInput,
     directory_output: directory_input::DirectoryInput,
     log_messages: Vec<LogMessage>,
+    templates: Vec<Template>,
+    template_manager: template_manager::TemplateManager,
 }
 
 impl Default for SorterForm {
@@ -63,14 +57,14 @@ impl SorterForm {
             input_path: String::new(),
             output_path: String::new(),
             option_form: option_form::OptionForm::new(),
-            editable_file_tree: editable_tree::editable_tree::EditableTree::new(
-                get_metadata_catalog()
-                    .with(&get_manipulation_catalog())
-                    .with(&get_analysis_catalog()),
-            ),
+            editable_file_tree: editable_tree::editable_tree::EditableTree::new(all_catalog()),
             directory_input: directory_input::DirectoryInput::new(None, "Input path".to_string()),
             directory_output: directory_input::DirectoryInput::new(None, "Output path".to_string()),
             log_messages: vec![],
+            templates: template::manager::TemplateManager::list(),
+            template_manager: template_manager::TemplateManager::new(
+                crate::ui::template::manager::TemplateManager::list(),
+            ),
         }
     }
 
@@ -109,6 +103,9 @@ impl SorterForm {
             .collect();
 
         let content = column![
+            self.template_manager
+                .view()
+                .map(Message::TemplateManagerMessage),
             container(scrollable(Column::from_vec(alert_list).spacing(4)))
                 .height(Length::Shrink)
                 .max_height(200.0),
@@ -131,7 +128,7 @@ impl SorterForm {
         match message {
             Message::Sort => {
                 let strategies = self.editable_file_tree.get_sorting_strategies();
-                return Some(Event::Sort(SortPayload {
+                return Some(Event::Sort(shared::sort_payload::SortPayload {
                     input: self.input_path.clone(),
                     output: self.output_path.clone(),
                     strategies,
@@ -159,6 +156,59 @@ impl SorterForm {
             }
             Message::OptionFormMessage(option_form_message) => {
                 self.option_form.update(option_form_message);
+            }
+            Message::TemplateManagerMessage(message) => {
+                let maybe_event = self.template_manager.update(message);
+
+                if let Some(event) = maybe_event {
+                    match event {
+                        template_manager::Event::SaveTemplate(template_name) => {
+                            let template = Template {
+                                name: template_name,
+                                strategies: self.editable_file_tree.payload(),
+                                input: self.input_path.clone(),
+                                output: self.output_path.clone(),
+                                options: self.option_form.get_options(),
+                            };
+
+                            if let Err(err) =
+                                crate::ui::template::manager::TemplateManager::save(template)
+                            {
+                                self.log_messages.push(LogMessage::Error(format!(
+                                    "Failed to save template: {}",
+                                    err
+                                )));
+                            }
+                        }
+                        template_manager::Event::LoadTemplate(template_name) => {
+                            let maybe_template = self
+                                .templates
+                                .iter()
+                                .find(|t| t.name == template_name)
+                                .cloned();
+
+                            if let Some(template) = maybe_template {
+                                self.directory_input = directory_input::DirectoryInput::new(
+                                    Some(template.input.clone()),
+                                    "Input path".to_string(),
+                                );
+                                self.input_path = template.input.clone();
+
+                                self.directory_output = directory_input::DirectoryInput::new(
+                                    Some(template.output.clone()),
+                                    "Output path".to_string(),
+                                );
+                                self.output_path = template.output.clone();
+
+                                self.editable_file_tree =
+                                    editable_tree::editable_tree::EditableTree::from(
+                                        template.strategies,
+                                    );
+                                self.option_form = option_form::OptionForm::from(template.options);
+                            }
+                        }
+                    }
+                }
             }
         }
         None

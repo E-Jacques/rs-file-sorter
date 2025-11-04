@@ -6,12 +6,15 @@ use crate::{
         validation::ParameterDetail,
     },
     sorting_strategies::strategy_catalog::StrategyCatalog,
-    ui::screen::sorter_form::editable_tree::{
-        editable_tree::EditableTree,
-        editable_tree_item_combo_box::EditableTreeItemComboBox,
-        editable_tree_item_number::EditableTreeItemNumber,
-        editable_tree_item_text_input::EditableTreeItemTextInput,
-        shared::{ParameterInput, TreeInputMessage, TreeItemMessage},
+    ui::{
+        screen::sorter_form::editable_tree::{
+            editable_tree::EditableTree,
+            editable_tree_item_combo_box::EditableTreeItemComboBox,
+            editable_tree_item_number::EditableTreeItemNumber,
+            editable_tree_item_text_input::EditableTreeItemTextInput,
+            shared::{ParameterInput, TreeInputMessage, TreeItemMessage},
+        },
+        template::strategy_payload::ParameterValue,
     },
 };
 
@@ -106,5 +109,27 @@ impl ChildElement {
 fn map_message<T: Into<TreeInputMessage>>(name: String) -> impl Fn(T) -> TreeItemMessage {
     move |child_message| {
         TreeItemMessage::ParameterChanged(name.clone(), Box::new(child_message.into()))
+    }
+}
+
+impl From<ParameterValue> for ChildElement {
+    fn from(value: ParameterValue) -> Self {
+        match value {
+            ParameterValue::String(str) => {
+                // TODO : refactor to have defautl value
+                let mut el = EditableTreeItemTextInput::new("Select an option".to_string());
+                el.update(super::shared::TreeTextInputMessage::ValueUpdate(
+                    str.clone(),
+                ));
+                ChildElement::StringParameter(Box::new(el))
+            }
+            ParameterValue::Integer(num) => ChildElement::NumberParameter(Box::new(
+                EditableTreeItemNumber::new("Insert a number here".to_string(), Some(num)),
+            )),
+            ParameterValue::Array(arr) => ChildElement::StrategyParameter(EditableTree::from(arr)),
+            _ => {
+                panic!("Unsupported ParameterValue type for ChildElement conversion");
+            }
+        }
     }
 }

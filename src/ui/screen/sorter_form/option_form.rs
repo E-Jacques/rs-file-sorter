@@ -58,3 +58,9 @@ impl OptionForm {
         self.options.clone()
     }
 }
+
+impl From<SortOptions> for OptionForm {
+    fn from(options: SortOptions) -> Self {
+        OptionForm { options }
+    }
+}

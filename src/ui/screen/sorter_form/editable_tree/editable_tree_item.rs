@@ -7,10 +7,14 @@ use iced::{
 
 use crate::{
     core::strategy::Strategy,
-    sorting_strategies::strategy_catalog::StrategyCatalog,
+    sorting_strategies::{all_catalog::all_catalog, strategy_catalog::StrategyCatalog},
     ui::{
         custom_theme,
         screen::sorter_form::editable_tree::child_element::ChildElement,
+        template::{
+            self,
+            strategy_payload::{ParameterValue, StrategyPayload},
+        },
         widget::{button::icon_button::icon_button, icon},
     },
 };
@@ -135,5 +139,69 @@ impl EditableTreeItem {
         }
 
         Some(strategy)
+    }
+}
+
+impl Into<StrategyPayload> for EditableTreeItem {
+    fn into(self) -> StrategyPayload {
+        let strategy_name = self.selected_strategy.unwrap_or_default();
+        let mut parameters = Vec::new();
+
+        for (name, child_element) in self.child_elements {
+            if let Some(value) = child_element.strategy_parameter() {
+                parameters.push(template::strategy_payload::Parameter {
+                    name,
+                    value: value.into(),
+                });
+            }
+        }
+
+        StrategyPayload {
+            strategy_name,
+            parameters,
+        }
+    }
+}
+
+impl From<StrategyPayload> for EditableTreeItem {
+    fn from(payload: StrategyPayload) -> Self {
+        let mut item = EditableTreeItem::new(all_catalog());
+
+        item.selected_strategy = Some(payload.strategy_name);
+        item.set_strategy_properties_setter();
+
+        let mut children = HashMap::new();
+        for param in payload.parameters {
+            children.insert(param.name, ChildElement::from(param.value));
+        }
+
+        item.child_elements = children;
+
+        item
+    }
+}
+
+impl From<ParameterValue> for EditableTreeItem {
+    fn from(value: ParameterValue) -> Self {
+        let mut item = EditableTreeItem::new(all_catalog());
+
+        if let ParameterValue::Strategy(payload) = value {
+            item.selected_strategy = Some(payload.strategy_name);
+            item.set_strategy_properties_setter();
+
+            let mut children = HashMap::new();
+            for param in payload.parameters {
+                children.insert(param.name, ChildElement::from(param.value));
+            }
+
+            item.child_elements = children;
+        } else {
+            panic!(
+                "Invalid ParameterValue for EditableTreeItem, expected Strategy but received {:?}",
+                value
+            );
+        }
+
+        item
     }
 }
