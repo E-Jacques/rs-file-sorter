@@ -55,6 +55,12 @@ impl strategy::ParameterDetails for OrStrategy {
     }
 }
 
+impl strategy::Parameters for OrStrategy {
+    fn parameters(&self) -> std::collections::HashMap<String, StrategyParameter> {
+        self.parameters.clone()
+    }
+}
+
 impl strategy::Name for OrStrategy {
     fn name(&self) -> String {
         "or".to_string()
@@ -141,6 +147,12 @@ mod tests {
     impl strategy::AsStrategy for NoneStrategy {
         fn as_strategy(&self) -> &dyn strategy::Strategy {
             self
+        }
+    }
+
+    impl strategy::Parameters for NoneStrategy {
+        fn parameters(&self) -> std::collections::HashMap<String, StrategyParameter> {
+            std::collections::HashMap::new()
         }
     }
 

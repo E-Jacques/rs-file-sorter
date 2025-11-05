@@ -74,6 +74,12 @@ impl strategy::ParameterDetails for TextSemanticStrategy {
     }
 }
 
+impl strategy::Parameters for TextSemanticStrategy {
+    fn parameters(&self) -> std::collections::HashMap<String, parameter::StrategyParameter> {
+        self.parameters.clone()
+    }
+}
+
 /// Find the index of the maximum value in a vector
 ///
 /// Returns `None` if the vector is empty

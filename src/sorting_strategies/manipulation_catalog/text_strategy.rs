@@ -30,6 +30,12 @@ impl TextStrategy {
     }
 }
 
+impl strategy::Parameters for TextStrategy {
+    fn parameters(&self) -> std::collections::HashMap<String, StrategyParameter> {
+        self.parameters.clone()
+    }
+}
+
 impl strategy::AddParameter for TextStrategy {
     fn add_parameter(&mut self, key: String, value: StrategyParameter) {
         self.parameters.insert(key, value);

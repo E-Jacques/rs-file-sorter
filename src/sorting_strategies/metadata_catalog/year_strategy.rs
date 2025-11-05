@@ -48,3 +48,9 @@ impl strategy::ParameterDetails for YearStrategy {
         vec![]
     }
 }
+
+impl strategy::Parameters for YearStrategy {
+    fn parameters(&self) -> std::collections::HashMap<String, parameter::StrategyParameter> {
+        std::collections::HashMap::new()
+    }
+}

@@ -80,3 +80,9 @@ impl crate::core::context::ProcessContext for ConcatStrategy {
         Ok(())
     }
 }
+
+impl strategy::Parameters for ConcatStrategy {
+    fn parameters(&self) -> std::collections::HashMap<String, StrategyParameter> {
+        self.parameters.clone()
+    }
+}

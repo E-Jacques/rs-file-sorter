@@ -98,3 +98,9 @@ impl context::ProcessContext for MonthStrategy {
         Ok(())
     }
 }
+
+impl strategy::Parameters for MonthStrategy {
+    fn parameters(&self) -> std::collections::HashMap<String, parameter::StrategyParameter> {
+        self.parameters.clone()
+    }
+}

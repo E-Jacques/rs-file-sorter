@@ -46,3 +46,11 @@ impl crate::core::context::ProcessContext for FileTypeStrategy {
         Ok(())
     }
 }
+
+impl strategy::Parameters for FileTypeStrategy {
+    fn parameters(
+        &self,
+    ) -> std::collections::HashMap<String, crate::core::parameter::StrategyParameter> {
+        std::collections::HashMap::new()
+    }
+}
