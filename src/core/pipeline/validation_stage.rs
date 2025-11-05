@@ -36,7 +36,7 @@ mod tests {
         core::{
             context::ProcessContext,
             pipeline::pipeline_data::PipelineDataKind,
-            strategy::{AddParameter, Apply, Name, ParameterDetails, Strategy},
+            strategy::{AddParameter, Apply, Name, ParameterDetails, Parameters, Strategy},
         },
         sorting_strategies::metadata_catalog::get_metadata_catalog,
     };
@@ -116,6 +116,15 @@ mod tests {
         impl Name for MyStrategy {
             fn name(&self) -> String {
                 "my-strategy".to_string()
+            }
+        }
+
+        impl Parameters for MyStrategy {
+            fn parameters(
+                &self,
+            ) -> std::collections::HashMap<String, crate::core::parameter::StrategyParameter>
+            {
+                std::collections::HashMap::new()
             }
         }
 
