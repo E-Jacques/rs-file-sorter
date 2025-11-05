@@ -45,3 +45,11 @@ impl context::ProcessContext for FileExtStrategy {
         Ok(())
     }
 }
+
+impl strategy::Parameters for FileExtStrategy {
+    fn parameters(
+        &self,
+    ) -> std::collections::HashMap<String, crate::core::parameter::StrategyParameter> {
+        std::collections::HashMap::new()
+    }
+}
