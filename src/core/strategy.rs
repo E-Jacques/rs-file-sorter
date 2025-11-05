@@ -16,7 +16,14 @@ where
 }
 
 pub trait Strategy:
-    Apply + Validate + ProcessContext + AddParameter + ParameterDetails + Name + StrategyCloneBox
+    Apply
+    + Validate
+    + ProcessContext
+    + AddParameter
+    + ParameterDetails
+    + Parameters
+    + Name
+    + StrategyCloneBox
 {
     fn as_apply(&self) -> Box<dyn Apply>;
     fn as_validate(&self) -> Box<dyn Validate>;
@@ -29,6 +36,7 @@ impl<
             + ProcessContext
             + AddParameter
             + ParameterDetails
+            + Parameters
             + Name
             + Clone
             + 'static,
@@ -70,4 +78,8 @@ pub trait Validate {
 
 pub trait AsStrategy {
     fn as_strategy(&self) -> &dyn Strategy;
+}
+
+pub trait Parameters {
+    fn parameters(&self) -> std::collections::HashMap<String, StrategyParameter>;
 }

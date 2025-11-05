@@ -48,7 +48,7 @@ mod tests {
     use crate::core::{
         context,
         pipeline::pipeline_data::{PipelineContext, PipelineDataKind},
-        strategy::{AddParameter, Apply, Name, ParameterDetails, Validate},
+        strategy::{AddParameter, Apply, Name, ParameterDetails, Parameters, Validate},
         validation,
     };
 
@@ -93,6 +93,14 @@ mod tests {
         }
     }
 
+    impl Parameters for TestContext {
+        fn parameters(
+            &self,
+        ) -> std::collections::HashMap<String, crate::core::parameter::StrategyParameter> {
+            std::collections::HashMap::new()
+        }
+    }
+
     #[derive(Debug, Clone)]
     struct TestErrorContext;
     impl context::ProcessContext for TestErrorContext {
@@ -128,6 +136,14 @@ mod tests {
     impl Name for TestErrorContext {
         fn name(&self) -> String {
             "TestErrorContext".to_string()
+        }
+    }
+
+    impl Parameters for TestErrorContext {
+        fn parameters(
+            &self,
+        ) -> std::collections::HashMap<String, crate::core::parameter::StrategyParameter> {
+            std::collections::HashMap::new()
         }
     }
 

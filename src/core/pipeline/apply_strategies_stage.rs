@@ -64,7 +64,7 @@ mod tests {
         context::ProcessContext,
         options::SortOptions,
         pipeline::pipeline_data::PipelineDataKind,
-        strategy::{AddParameter, Apply, Name, ParameterDetails, Validate},
+        strategy::{AddParameter, Apply, Name, ParameterDetails, Parameters, Validate},
         validation,
     };
 
@@ -157,6 +157,15 @@ mod tests {
         impl Name for Strategy1 {
             fn name(&self) -> String {
                 "strategy1".to_string()
+            }
+        }
+
+        impl Parameters for Strategy1 {
+            fn parameters(
+                &self,
+            ) -> std::collections::HashMap<String, crate::core::parameter::StrategyParameter>
+            {
+                std::collections::HashMap::new()
             }
         }
 
@@ -302,6 +311,15 @@ mod tests {
             }
         }
 
+        impl Parameters for Strategy1 {
+            fn parameters(
+                &self,
+            ) -> std::collections::HashMap<String, crate::core::parameter::StrategyParameter>
+            {
+                std::collections::HashMap::new()
+            }
+        }
+
         let context = PipelineContext::new(
             vec![Box::new(Strategy1)],
             SortOptions::default(),
@@ -375,6 +393,15 @@ mod tests {
         impl Name for Strategy1 {
             fn name(&self) -> String {
                 "strategy1".to_string()
+            }
+        }
+
+        impl Parameters for Strategy1 {
+            fn parameters(
+                &self,
+            ) -> std::collections::HashMap<String, crate::core::parameter::StrategyParameter>
+            {
+                std::collections::HashMap::new()
             }
         }
 
