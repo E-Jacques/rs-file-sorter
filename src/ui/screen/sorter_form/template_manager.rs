@@ -1,6 +1,9 @@
-use iced::widget::{column, combo_box, row};
+use iced::{
+    widget::{column, combo_box, container, row, text},
+    Length,
+};
 
-use crate::ui::template::template::Template;
+use crate::ui::{custom_theme, template::template::Template};
 
 pub struct TemplateManager {
     state: combo_box::State<String>,
@@ -30,20 +33,34 @@ impl TemplateManager {
     }
 
     pub fn view(&self) -> iced::Element<'_, Message> {
-        column![
-            combo_box(
-                &self.state,
-                "Select Template",
-                self.selected_template.as_ref().map(|t| &t.name),
-                |name| Message::LoadTemplate(name),
-            ),
-            row![
-                iced::widget::text_input("Template Name", &self.new_template_name)
-                    .on_input(Message::NameUpdate),
-                crate::ui::widget::button::primary_button::primary_button("save template")
-                    .on_press(Message::SaveTemplate)
+        container(
+            column![
+                text("Templates").font(custom_theme::TextFont::bold()),
+                combo_box(
+                    &self.state,
+                    "Select Template",
+                    self.selected_template.as_ref().map(|t| &t.name),
+                    |name| Message::LoadTemplate(name),
+                ),
+                row![
+                    iced::widget::text_input("Template Name", &self.new_template_name)
+                        .on_input(Message::NameUpdate)
+                        .width(Length::FillPortion(3)),
+                    crate::ui::widget::button::primary_button::primary_button("Save template")
+                        .on_press(Message::SaveTemplate)
+                        .width(Length::FillPortion(2)),
+                ]
+                .spacing(8.0)
             ]
-        ]
+            .spacing(8.0),
+        )
+        .padding(16.0)
+        .style(|_| {
+            let mut style = container::Style::default();
+            style.border = custom_theme::border_style();
+
+            style
+        })
         .into()
     }
 

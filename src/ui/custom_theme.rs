@@ -23,7 +23,7 @@ pub fn border_style() -> Border {
     }
 }
 
-pub struct ButtonPrimary {}
+pub struct ButtonPrimary;
 
 impl ButtonPrimary {
     pub fn style(
@@ -38,7 +38,7 @@ impl ButtonPrimary {
     }
 }
 
-pub struct ButtonSecondary {}
+pub struct ButtonSecondary;
 
 impl ButtonSecondary {
     pub fn style(
@@ -49,7 +49,7 @@ impl ButtonSecondary {
     }
 }
 
-pub struct TextInput {}
+pub struct TextInput;
 
 impl TextInput {
     pub fn style(
@@ -60,5 +60,14 @@ impl TextInput {
         style.border = border_style();
 
         style
+    }
+}
+
+pub struct TextFont;
+impl TextFont {
+    pub fn bold() -> iced::Font {
+        let mut font = iced::Font::default();
+        font.weight = iced::font::Weight::Bold;
+        font
     }
 }
