@@ -26,7 +26,7 @@ impl OptionForm {
     pub fn view(&self) -> iced::Element<'_, Message> {
         container(
             column![
-                iced::widget::text("Options"),
+                iced::widget::text("Options").font(custom_theme::TextFont::bold()),
                 iced::widget::checkbox("Dry run", self.options.dry_run)
                     .on_toggle(|checked| Message::UpdateDryRun(checked)),
                 iced::widget::checkbox("At root level only", self.options.root_level_only)
@@ -35,7 +35,7 @@ impl OptionForm {
             .spacing(16)
             .width(Length::Fill),
         )
-        .padding(8)
+        .padding(16.0)
         .style(|_| {
             let mut style = container::Style::default();
             style.border = custom_theme::border_style();

@@ -4,7 +4,12 @@ use iced::{
 };
 use rfd::FileDialog;
 
-use crate::ui::{custom_theme, widget::icon};
+use crate::{
+    ui::{custom_theme, widget::icon},
+    utils::string_manipulator::{elipsis, ElispsisDirection},
+};
+
+const MAX_CHAR: usize = 35;
 
 #[derive(Clone, Debug)]
 pub enum DirectoryInputMessage {
@@ -40,20 +45,35 @@ impl DirectoryInput {
         let button = button(icon::icon(icon::FOLDER_CLOSED))
             .on_press(DirectoryInputMessage::OpenExplorer)
             .style(custom_theme::ButtonPrimary::style);
-        let header = row![text(self.label.clone()).width(Length::Fill), button]
+
+        column![
+            text(self.label.clone()).size(12.0).width(Length::Fill),
+            row![
+                container(
+                    text(elipsis(
+                        self.path.clone().unwrap_or(" ".to_string()),
+                        MAX_CHAR,
+                        ElispsisDirection::Middle,
+                    ))
+                    .wrapping(text::Wrapping::None)
+                )
+                .height(Length::Shrink)
+                .width(Length::Fill)
+                .clip(true)
+                .padding(4)
+                .style(|_| {
+                    let mut style = container::Style::default();
+                    style.border = custom_theme::border_style();
+
+                    style
+                }),
+                button
+            ]
             .spacing(8)
-            .align_y(iced::Alignment::End);
-        let body = container(text(self.path.clone().unwrap_or(" ".to_string())))
-            .width(Length::Fill)
-            .padding(4)
-            .style(|_| {
-                let mut style = container::Style::default();
-                style.border = custom_theme::border_style();
-
-                style
-            });
-
-        column![header, body].spacing(8).into()
+            .align_y(iced::Alignment::End)
+        ]
+        .spacing(4.0)
+        .into()
     }
 
     pub fn update(&mut self, message: DirectoryInputMessage) -> DirectoryInputEvent {

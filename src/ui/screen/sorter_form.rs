@@ -4,13 +4,14 @@ mod option_form;
 mod template_manager;
 
 use iced::{
-    widget::{column, container, scrollable, Column},
+    widget::{column, container, scrollable, text, Column},
     Element, Length,
 };
 
 use crate::{
     sorting_strategies::all_catalog::all_catalog,
     ui::{
+        custom_theme,
         file_sorter_app::LogMessage,
         shared,
         template::{self, template::Template},
@@ -58,8 +59,8 @@ impl SorterForm {
             output_path: String::new(),
             option_form: option_form::OptionForm::new(),
             editable_file_tree: editable_tree::editable_tree::EditableTree::new(all_catalog()),
-            directory_input: directory_input::DirectoryInput::new(None, "Input path".to_string()),
-            directory_output: directory_input::DirectoryInput::new(None, "Output path".to_string()),
+            directory_input: directory_input::DirectoryInput::new(None, "Input".to_string()),
+            directory_output: directory_input::DirectoryInput::new(None, "Output".to_string()),
             log_messages: vec![],
             templates: template::manager::TemplateManager::list(),
             template_manager: template_manager::TemplateManager::new(
@@ -109,8 +110,25 @@ impl SorterForm {
             container(scrollable(Column::from_vec(alert_list).spacing(4)))
                 .height(Length::Shrink)
                 .max_height(200.0),
-            input_path,
-            output_path,
+            container(
+                column![
+                    text("Input / Output").font({
+                        let mut font = iced::Font::default();
+                        font.weight = iced::font::Weight::Bold;
+                        font
+                    }),
+                    input_path,
+                    output_path
+                ]
+                .spacing(8.0)
+            )
+            .padding(16.0)
+            .style(|_| {
+                let mut style = container::Style::default();
+                style.border = custom_theme::border_style();
+
+                style
+            }),
             self.option_form.view().map(Message::OptionFormMessage),
             output_path_tree,
             sort_button

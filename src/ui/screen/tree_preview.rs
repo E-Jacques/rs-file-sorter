@@ -52,7 +52,10 @@ impl TreePreview {
         container(
             column![
                 row![
-                    iced::widget::text("Sorter Report").width(Length::Fill),
+                    iced::widget::text("Sorter Report")
+                        .font(custom_theme::TextFont::bold())
+                        .size(24.0)
+                        .width(Length::Fill),
                     iced::widget::button("Apply")
                         .on_press(Message::Apply)
                         .style(custom_theme::ButtonPrimary::style)
