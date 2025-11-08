@@ -11,8 +11,8 @@ impl FileTypeStrategy {
 
 impl strategy::Apply for FileTypeStrategy {
     fn apply(&self, file_path: &std::path::PathBuf, _: &std::fs::File) -> Option<String> {
-        let ext = super::file::file_ext::file_ext(file_path);
-        Some(super::file::filetype::FileType::from_extension(&ext).to_string())
+        let ext = crate::sorting_strategies::file::file_ext::file_ext(file_path);
+        Some(crate::sorting_strategies::file::filetype::FileType::from_extension(&ext).to_string())
     }
 }
 

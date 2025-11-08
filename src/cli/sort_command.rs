@@ -9,10 +9,7 @@ use crate::{
         strategy::Strategy,
         validation,
     },
-    sorting_strategies::{
-        manipulation_catalog::get_manipulation_catalog, metadata_catalog::get_metadata_catalog,
-        strategy_catalog::StrategyCatalog,
-    },
+    sorting_strategies::catalog::{all_catalog, StrategyCatalog},
     utils::{
         file_manipulator::{to_absolute_path, to_relative_path},
         logger::Logger,
@@ -57,13 +54,10 @@ fn get_strategy_validator(
 }
 
 pub fn exec_sort_command(args: Vec<ParsedArgs>, params: Vec<String>, logger: Logger) {
-    let sorting_strategies_list: StrategyCatalog =
-        get_metadata_catalog().with(&get_manipulation_catalog());
-
     let dry_run: bool = get_bool_arg_value(&args, DRY_RUN);
     let root_level_only: bool = get_bool_arg_value(&args, ROOT_ONLY);
 
-    match get_cli_inputs(args, params, STACK, sorting_strategies_list).and_then(
+    match get_cli_inputs(args, params, STACK, all_catalog()).and_then(
         |(input_dir, output_dir, sorting_strategies)| {
             crate::core::SortPipeline::new(
                 input_dir,
@@ -309,7 +303,7 @@ mod tests_exec_sort_command_panics {
 
     #[test]
     #[should_panic(
-        expected = "[ERROR] [Sort Command] Unexpected stack value. Got 'unknown_stack', expected one of: month, year, file extension, file type, concat, text, or."
+        expected = "[ERROR] [Sort Command] Unexpected stack value. Got 'unknown_stack', expected one of: month, year, file extension, file type, concat, text, or, text semantic."
     )]
     fn test_exec_sort_command_unexpected_stack_value() {
         exec_sort_command(

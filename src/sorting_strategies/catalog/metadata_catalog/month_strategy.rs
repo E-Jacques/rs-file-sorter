@@ -2,8 +2,6 @@ use std::str::FromStr;
 
 use crate::core::{context, parameter, strategy, validation};
 
-use super::utils;
-
 static SUPPORTED_LOCALES: &'static [chrono::Locale] = &[
     chrono::Locale::fr_FR,
     chrono::Locale::en_US,
@@ -13,7 +11,7 @@ const LOCALE_PARAMETER_NAME: &str = "locale";
 
 #[derive(Clone, Debug)]
 pub struct MonthStrategy {
-    validator: utils::BaseValidator,
+    validator: crate::sorting_strategies::utils::BaseValidator,
     parameters: std::collections::HashMap<String, parameter::StrategyParameter>,
 }
 
@@ -33,7 +31,7 @@ impl MonthStrategy {
             chrono::Locale::en_US.to_string(),
         ));
 
-        let mut validator = utils::BaseValidator::new();
+        let mut validator = crate::sorting_strategies::utils::BaseValidator::new();
         validator.add_validator(locale_validation_criteria);
 
         let parameters = validator.default_parameters();

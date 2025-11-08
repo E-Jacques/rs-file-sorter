@@ -9,7 +9,7 @@ use iced::{
 };
 
 use crate::{
-    sorting_strategies::all_catalog::all_catalog,
+    sorting_strategies::catalog::all_catalog,
     ui::{
         custom_theme,
         file_sorter_app::LogMessage,

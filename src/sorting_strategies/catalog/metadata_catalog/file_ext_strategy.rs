@@ -11,7 +11,9 @@ impl FileExtStrategy {
 
 impl strategy::Apply for FileExtStrategy {
     fn apply(&self, file_path: &std::path::PathBuf, _: &std::fs::File) -> Option<String> {
-        Some(super::file::file_ext::file_ext(file_path))
+        Some(crate::sorting_strategies::file::file_ext::file_ext(
+            file_path,
+        ))
     }
 }
 

@@ -1,5 +1,3 @@
-// TODO : Paramétrer le nombre de cluster. Créer un input number. Améliorer le fonctionnement de KMean avec des strategies.
-
 use crate::{
     core::{
         parameter::{self, StrategyParameter},

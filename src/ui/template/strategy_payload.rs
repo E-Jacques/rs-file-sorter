@@ -1,12 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    core::parameter::StrategyParameter,
-    sorting_strategies::{
-        analysis_catalog::get_analysis_catalog, manipulation_catalog::get_manipulation_catalog,
-        metadata_catalog::get_metadata_catalog,
-    },
-};
+use crate::{core::parameter::StrategyParameter, sorting_strategies::catalog::all_catalog};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StrategyPayload {
@@ -67,10 +61,7 @@ impl Into<StrategyParameter> for ParameterValue {
 
                 for val in values {
                     if let ParameterValue::Strategy(s) = val {
-                        let maybe_strategy = get_metadata_catalog()
-                            .with(&get_manipulation_catalog())
-                            .with(&get_analysis_catalog())
-                            .get_strategy(&s.strategy_name);
+                        let maybe_strategy = all_catalog().get_strategy(&s.strategy_name);
 
                         if let Some(strategy) = maybe_strategy {
                             strategies.push(strategy);
