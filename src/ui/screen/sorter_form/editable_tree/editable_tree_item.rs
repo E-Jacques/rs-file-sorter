@@ -7,7 +7,7 @@ use iced::{
 
 use crate::{
     core::strategy::Strategy,
-    sorting_strategies::{all_catalog::all_catalog, strategy_catalog::StrategyCatalog},
+    sorting_strategies::catalog::{all_catalog, StrategyCatalog},
     ui::{
         custom_theme,
         screen::sorter_form::editable_tree::child_element::ChildElement,

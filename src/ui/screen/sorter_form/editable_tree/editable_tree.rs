@@ -4,7 +4,7 @@ use iced::{widget::column, Element, Length};
 
 use crate::{
     core::strategy::Strategy,
-    sorting_strategies::{all_catalog::all_catalog, strategy_catalog::StrategyCatalog},
+    sorting_strategies::catalog::{all_catalog, StrategyCatalog},
     ui::{
         template::{self, strategy_payload::ParameterValue},
         widget::button::primary_button::primary_button,

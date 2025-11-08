@@ -38,7 +38,7 @@ mod tests {
             pipeline::pipeline_data::PipelineDataKind,
             strategy::{AddParameter, Apply, Name, ParameterDetails, Parameters, Strategy},
         },
-        sorting_strategies::metadata_catalog::get_metadata_catalog,
+        sorting_strategies::catalog::get_metadata_catalog,
     };
 
     use super::*;

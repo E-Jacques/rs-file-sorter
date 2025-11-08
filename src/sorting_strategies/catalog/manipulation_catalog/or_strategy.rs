@@ -101,7 +101,7 @@ mod tests {
     use super::*;
     use crate::{
         core::strategy::Strategy,
-        sorting_strategies::manipulation_catalog::text_strategy::TextStrategy,
+        sorting_strategies::catalog::manipulation_catalog::text_strategy::TextStrategy,
     };
 
     #[derive(Clone, Debug)]

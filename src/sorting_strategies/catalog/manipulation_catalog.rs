@@ -2,7 +2,7 @@ mod concat_strategy;
 mod or_strategy;
 mod text_strategy;
 
-use crate::sorting_strategies::strategy_catalog::StrategyCatalog;
+use super::strategy_catalog::StrategyCatalog;
 
 pub fn get_manipulation_catalog() -> StrategyCatalog {
     StrategyCatalog::new(vec![

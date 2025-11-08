@@ -1,4 +1,4 @@
-use crate::sorting_strategies::{
+use super::{
     analysis_catalog::get_analysis_catalog, manipulation_catalog::get_manipulation_catalog,
     metadata_catalog::get_metadata_catalog, strategy_catalog::StrategyCatalog,
 };

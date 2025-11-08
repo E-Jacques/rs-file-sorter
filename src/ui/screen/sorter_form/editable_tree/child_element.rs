@@ -5,7 +5,7 @@ use crate::{
         parameter::{StrategyParameter, StrategyParameterKind},
         validation::ParameterDetail,
     },
-    sorting_strategies::strategy_catalog::StrategyCatalog,
+    sorting_strategies::catalog::StrategyCatalog,
     ui::{
         screen::sorter_form::editable_tree::{
             editable_tree::EditableTree,

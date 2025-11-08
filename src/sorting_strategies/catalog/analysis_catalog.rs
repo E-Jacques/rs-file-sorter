@@ -1,4 +1,4 @@
-use crate::sorting_strategies::strategy_catalog::StrategyCatalog;
+use super::strategy_catalog::StrategyCatalog;
 
 mod text_semantic_strategy;
 

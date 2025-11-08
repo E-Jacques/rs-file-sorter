@@ -1,11 +1,8 @@
+use super::strategy_catalog::StrategyCatalog;
 mod file_ext_strategy;
 mod file_type_strategy;
 mod month_strategy;
 mod year_strategy;
-
-use super::*;
-
-use crate::sorting_strategies::strategy_catalog::StrategyCatalog;
 
 pub fn get_metadata_catalog() -> StrategyCatalog {
     StrategyCatalog::new(vec![
